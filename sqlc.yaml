@@ -1,0 +1,12 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "db/schema.sql" # Optional, path to your database schema (for migrations, etc.)
+    queries: "db/queries"   # Path to your .sql query files
+    gen:
+      go:
+        package: "models"    # Package name for the generated code
+        out: "models"        # Directory for the generated code
+        emit_json_tags: true
+        json_tags_case_style: "camel"
+        emit_empty_slices: true
