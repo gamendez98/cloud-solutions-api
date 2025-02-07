@@ -7,12 +7,12 @@ import (
 
 type HandlerContext struct {
 	Queryer *models.Queries
-	Secret  string
+	Secret  []byte
 }
 
 func NewHandlerContext(configuration config.Config) *HandlerContext {
 	handlerContext := &HandlerContext{
-		Secret: configuration.Secret,
+		Secret: []byte(configuration.Secret),
 	}
 	queryer, err := models.NewQueryer(models.Config{
 		DBHost:     configuration.DbHost,

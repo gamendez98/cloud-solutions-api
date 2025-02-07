@@ -6,8 +6,7 @@ CREATE TABLE accounts
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     username      TEXT NOT NULL UNIQUE,
     email         TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    image_path    TEXT
+    password_hash TEXT NOT NULL
 );
 
 

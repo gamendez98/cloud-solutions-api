@@ -9,8 +9,35 @@ import (
 	"context"
 )
 
+const createAccount = `-- name: CreateAccount :one
+INSERT INTO accounts (username, password_hash, email)
+VALUES ($1, $2, $3)
+RETURNING id, created_at, username, email, password_hash
+`
+
+type CreateAccountParams struct {
+	Username     string `json:"username"`
+	PasswordHash string `json:"passwordHash"`
+	Email        string `json:"email"`
+}
+
+func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {
+	row := q.db.QueryRowContext(ctx, createAccount, arg.Username, arg.PasswordHash, arg.Email)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+	)
+	return i, err
+}
+
 const getAccountByID = `-- name: GetAccountByID :one
-SELECT id, created_at, username, email, password_hash, image_path FROM accounts WHERE username = $1
+SELECT id, created_at, username, email, password_hash
+FROM accounts
+WHERE username = $1
 `
 
 func (q *Queries) GetAccountByID(ctx context.Context, username string) (Account, error) {
@@ -22,13 +49,14 @@ func (q *Queries) GetAccountByID(ctx context.Context, username string) (Account,
 		&i.Username,
 		&i.Email,
 		&i.PasswordHash,
-		&i.ImagePath,
 	)
 	return i, err
 }
 
 const getAccountByUsername = `-- name: GetAccountByUsername :one
-SELECT id, created_at, username, email, password_hash, image_path FROM accounts WHERE username = $1
+SELECT id, created_at, username, email, password_hash
+FROM accounts
+WHERE username = $1
 `
 
 func (q *Queries) GetAccountByUsername(ctx context.Context, username string) (Account, error) {
@@ -40,29 +68,32 @@ func (q *Queries) GetAccountByUsername(ctx context.Context, username string) (Ac
 		&i.Username,
 		&i.Email,
 		&i.PasswordHash,
-		&i.ImagePath,
 	)
 	return i, err
 }
 
-const getAccountPasswordByID = `-- name: GetAccountPasswordByID :one
-SELECT id, password_hash FROM accounts WHERE username = $1
+const getAccountPasswordHashByUsername = `-- name: GetAccountPasswordHashByUsername :one
+SELECT id, password_hash
+FROM accounts
+WHERE username = $1
 `
 
-type GetAccountPasswordByIDRow struct {
+type GetAccountPasswordHashByUsernameRow struct {
 	ID           int32  `json:"id"`
 	PasswordHash string `json:"passwordHash"`
 }
 
-func (q *Queries) GetAccountPasswordByID(ctx context.Context, username string) (GetAccountPasswordByIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getAccountPasswordByID, username)
-	var i GetAccountPasswordByIDRow
+func (q *Queries) GetAccountPasswordHashByUsername(ctx context.Context, username string) (GetAccountPasswordHashByUsernameRow, error) {
+	row := q.db.QueryRowContext(ctx, getAccountPasswordHashByUsername, username)
+	var i GetAccountPasswordHashByUsernameRow
 	err := row.Scan(&i.ID, &i.PasswordHash)
 	return i, err
 }
 
 const updateAccountPassword = `-- name: UpdateAccountPassword :exec
-UPDATE accounts SET password_hash = $1 WHERE id = $2
+UPDATE accounts
+SET password_hash = $1
+WHERE id = $2
 `
 
 type UpdateAccountPasswordParams struct {

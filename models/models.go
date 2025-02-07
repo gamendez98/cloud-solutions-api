@@ -11,12 +11,11 @@ import (
 )
 
 type Account struct {
-	ID           int32          `json:"id"`
-	CreatedAt    sql.NullTime   `json:"createdAt"`
-	Username     string         `json:"username"`
-	Email        string         `json:"email"`
-	PasswordHash string         `json:"passwordHash"`
-	ImagePath    sql.NullString `json:"imagePath"`
+	ID           int32        `json:"id"`
+	CreatedAt    sql.NullTime `json:"createdAt"`
+	Username     string       `json:"username"`
+	Email        string       `json:"email"`
+	PasswordHash string       `json:"passwordHash"`
 }
 
 type Chat struct {
