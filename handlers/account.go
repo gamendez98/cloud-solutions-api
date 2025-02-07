@@ -81,7 +81,14 @@ func (hc *HandlerContext) CreateUser(c echo.Context) error {
 }
 
 func (hc *HandlerContext) GetAccountByID(c echo.Context) error {
-	var account = models.Account{}
+	username, err := authentication.GetCurrentUsername(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Unauthorized"})
+	}
+	account, err := hc.Queryer.GetAccountByUsername(context.Background(), username)
+	if err != nil {
+		return err
+	}
 	return c.JSON(200, account)
 }
 
@@ -90,5 +97,5 @@ func RegisterAccountRoutes(e *echo.Echo, hc *HandlerContext) {
 	accountGroup := e.Group("/accounts")
 	accountGroup.POST("/login", hc.login)
 	accountGroup.POST("", hc.CreateUser)
-	accountGroup.GET("/:id", hc.GetAccountByID, echojwt.JWT(hc.Secret))
+	accountGroup.GET("", hc.GetAccountByID, echojwt.JWT(hc.Secret))
 }
