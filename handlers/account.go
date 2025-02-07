@@ -5,6 +5,7 @@ import (
 	"cloud-solutions-api/models"
 	"context"
 	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"time"
@@ -89,5 +90,5 @@ func RegisterAccountRoutes(e *echo.Echo, hc *HandlerContext) {
 	accountGroup := e.Group("/accounts")
 	accountGroup.POST("/login", hc.login)
 	accountGroup.POST("", hc.CreateUser)
-	accountGroup.GET("/:id", hc.GetAccountByID)
+	accountGroup.GET("/:id", hc.GetAccountByID, echojwt.JWT(hc.Secret))
 }
