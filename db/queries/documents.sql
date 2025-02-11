@@ -22,3 +22,10 @@ WHERE id = $1;
 SELECT id, created_at, name, text, file_path, embedding, account_id
 FROM documents
 WHERE account_id = $1;
+
+
+-- name: AccountOwnsDocument :one
+SELECT EXISTS(SELECT 1
+              FROM documents
+              WHERE account_id = $1
+                AND id = $2);

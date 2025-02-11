@@ -6,7 +6,7 @@ WHERE username = $1;
 -- name: GetAccountByID :one
 SELECT *
 FROM accounts
-WHERE username = $1;
+WHERE id = $1;
 
 -- name: UpdateAccountPassword :exec
 UPDATE accounts

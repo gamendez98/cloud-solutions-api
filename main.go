@@ -22,6 +22,7 @@ func main() {
 
 	// Routes
 	handlers.RegisterAccountRoutes(e, handlerContext)
+	handlers.RegisterDocumentRoutes(e, handlerContext)
 
 	// Start server
 	e.Logger.Fatal(e.Start(":8080"))

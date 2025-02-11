@@ -37,11 +37,11 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 const getAccountByID = `-- name: GetAccountByID :one
 SELECT id, created_at, username, email, password_hash
 FROM accounts
-WHERE username = $1
+WHERE id = $1
 `
 
-func (q *Queries) GetAccountByID(ctx context.Context, username string) (Account, error) {
-	row := q.db.QueryRowContext(ctx, getAccountByID, username)
+func (q *Queries) GetAccountByID(ctx context.Context, id int32) (Account, error) {
+	row := q.db.QueryRowContext(ctx, getAccountByID, id)
 	var i Account
 	err := row.Scan(
 		&i.ID,

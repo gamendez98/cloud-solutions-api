@@ -1,6 +1,8 @@
 package authentication
 
 import (
+	"cloud-solutions-api/models"
+	"context"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -47,4 +49,16 @@ func GetCurrentUsername(c echo.Context) (string, error) {
 	}
 
 	return username, nil
+}
+
+func GetCurrentAccount(queryer *models.Queries, c echo.Context) (models.Account, error) {
+	username, err := GetCurrentUsername(c)
+	if err != nil {
+		return models.Account{}, err
+	}
+	account, err := queryer.GetAccountByUsername(
+		context.Background(),
+		username,
+	)
+	return account, nil
 }

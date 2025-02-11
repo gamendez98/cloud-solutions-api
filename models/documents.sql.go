@@ -10,6 +10,25 @@ import (
 	"database/sql"
 )
 
+const accountOwnsDocument = `-- name: AccountOwnsDocument :one
+SELECT EXISTS(SELECT 1
+              FROM documents
+              WHERE account_id = $1
+                AND id = $2)
+`
+
+type AccountOwnsDocumentParams struct {
+	AccountID int32 `json:"accountId"`
+	ID        int32 `json:"id"`
+}
+
+func (q *Queries) AccountOwnsDocument(ctx context.Context, arg AccountOwnsDocumentParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, accountOwnsDocument, arg.AccountID, arg.ID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const createDocument = `-- name: CreateDocument :one
 INSERT INTO documents (name, text, file_path, embedding, account_id)
 VALUES ($1, $2, $3, $4, $5)
