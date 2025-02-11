@@ -99,15 +99,15 @@ func (q *Queries) GetDocumentByID(ctx context.Context, id int32) (Document, erro
 	return i, err
 }
 
-const getDocumentsByAccount = `-- name: GetDocumentsByAccount :many
+const getDocumentsByAccountID = `-- name: GetDocumentsByAccountID :many
 SELECT id, created_at, name, text, file_path, embedding, account_id
 FROM documents
 WHERE account_id = $1
 `
 
 // Get all documents for a specific account
-func (q *Queries) GetDocumentsByAccount(ctx context.Context, accountID int32) ([]Document, error) {
-	rows, err := q.db.QueryContext(ctx, getDocumentsByAccount, accountID)
+func (q *Queries) GetDocumentsByAccountID(ctx context.Context, accountID int32) ([]Document, error) {
+	rows, err := q.db.QueryContext(ctx, getDocumentsByAccountID, accountID)
 	if err != nil {
 		return nil, err
 	}

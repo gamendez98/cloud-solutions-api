@@ -29,3 +29,10 @@ RETURNING id, created_at, messages, account_id;
 DELETE
 FROM chats
 WHERE id = $1;
+
+
+-- name: AccountOwnsChat :one
+SELECT EXISTS(SELECT 1
+              FROM chats
+              WHERE account_id = $1
+                AND id = $2);

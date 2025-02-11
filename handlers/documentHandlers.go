@@ -32,7 +32,8 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 		return err
 	}
 
-	text := "" // TODO: read TEXT
+	text, err := document.ExtractTextFromDocumentFile(path)
+
 	newDocument, err := hc.Queryer.CreateDocument(
 		context.Background(),
 		models.CreateDocumentParams{
@@ -46,6 +47,8 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// TODO: enqueue for embedding creation
 
 	return c.JSON(http.StatusCreated, newDocument)
 }
@@ -92,6 +95,7 @@ func (hc *HandlerContext) DeleteDocumentByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{})
 }
 
+// RegisterDocumentRoutes sets up the routes for document operations, applying JWT authentication for restricted access.
 func RegisterDocumentRoutes(e *echo.Echo, hc *HandlerContext) {
 	restricted := echojwt.JWT(hc.Secret)
 	documentGroup := e.Group("/documents")

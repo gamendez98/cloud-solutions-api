@@ -92,6 +92,25 @@ func (hc *HandlerContext) GetAccountByID(c echo.Context) error {
 	return c.JSON(200, account)
 }
 
+func (hc *HandlerContext) GetAccountDocuments(c echo.Context) error {
+	account, err := authentication.GetCurrentAccount(hc.Queryer, c)
+	if err != nil {
+		return c.JSON(
+			http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
+		)
+	}
+	documents, err := hc.Queryer.GetDocumentsByAccountID(
+		context.Background(),
+		account.ID,
+	)
+	if err != nil {
+		return err
+	}
+	return c.JSON(
+		http.StatusOK, documents,
+	)
+}
+
 // RegisterAccountRoutes registers account-related routes
 func RegisterAccountRoutes(e *echo.Echo, hc *HandlerContext) {
 	restricted := echojwt.JWT(hc.Secret)
@@ -99,4 +118,5 @@ func RegisterAccountRoutes(e *echo.Echo, hc *HandlerContext) {
 	accountGroup.POST("/login", hc.login)
 	accountGroup.POST("", hc.CreateUser)
 	accountGroup.GET("", hc.GetAccountByID, restricted)
+	accountGroup.GET("/documents", hc.GetAccountDocuments, restricted)
 }

@@ -11,6 +11,25 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+const accountOwnsChat = `-- name: AccountOwnsChat :one
+SELECT EXISTS(SELECT 1
+              FROM chats
+              WHERE account_id = $1
+                AND id = $2)
+`
+
+type AccountOwnsChatParams struct {
+	AccountID int32 `json:"accountId"`
+	ID        int32 `json:"id"`
+}
+
+func (q *Queries) AccountOwnsChat(ctx context.Context, arg AccountOwnsChatParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, accountOwnsChat, arg.AccountID, arg.ID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const createChat = `-- name: CreateChat :one
 INSERT INTO chats (messages, account_id)
 VALUES ($1, $2)

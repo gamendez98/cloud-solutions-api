@@ -31,3 +31,8 @@ func SaveDocumentFile(file *multipart.FileHeader) (string, error) {
 
 	return filePath, nil
 }
+
+func ExtractTextFromDocumentFile(filePath string) (string, error) {
+	// TODO: read TEXT from .txt
+	return "This is a dummy text" + filePath, nil
+}
