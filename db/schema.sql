@@ -27,7 +27,7 @@ CREATE TABLE chats
 (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    messages JSON,
+    messages JSONB,
     account_id INTEGER NOT NULL REFERENCES accounts (id) ON DELETE CASCADE
 )
 

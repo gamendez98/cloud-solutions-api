@@ -7,6 +7,7 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/sqlc-dev/pqtype"
 )
@@ -28,6 +29,30 @@ func (q *Queries) AccountOwnsChat(ctx context.Context, arg AccountOwnsChatParams
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const addMessageToChat = `-- name: AddMessageToChat :one
+UPDATE chats
+SET messages = messages || $1::jsonb
+WHERE id = $2
+RETURNING id, created_at, messages, account_id
+`
+
+type AddMessageToChatParams struct {
+	Newmessage json.RawMessage `json:"newmessage"`
+	Chatid     int32           `json:"chatid"`
+}
+
+func (q *Queries) AddMessageToChat(ctx context.Context, arg AddMessageToChatParams) (Chat, error) {
+	row := q.db.QueryRowContext(ctx, addMessageToChat, arg.Newmessage, arg.Chatid)
+	var i Chat
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.Messages,
+		&i.AccountID,
+	)
+	return i, err
 }
 
 const createChat = `-- name: CreateChat :one
@@ -83,6 +108,40 @@ func (q *Queries) GetChatByID(ctx context.Context, id int32) (Chat, error) {
 		&i.AccountID,
 	)
 	return i, err
+}
+
+const getChatsByAccountID = `-- name: GetChatsByAccountID :many
+SELECT id, created_at, messages, account_id
+FROM chats
+WHERE account_id = $1
+`
+
+func (q *Queries) GetChatsByAccountID(ctx context.Context, accountID int32) ([]Chat, error) {
+	rows, err := q.db.QueryContext(ctx, getChatsByAccountID, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Chat{}
+	for rows.Next() {
+		var i Chat
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.Messages,
+			&i.AccountID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listChatsByAccountID = `-- name: ListChatsByAccountID :many

@@ -36,3 +36,16 @@ SELECT EXISTS(SELECT 1
               FROM chats
               WHERE account_id = $1
                 AND id = $2);
+
+
+-- name: GetChatsByAccountID :many
+SELECT *
+FROM chats
+WHERE account_id = $1;
+
+
+-- name: AddMessageToChat :one
+UPDATE chats
+SET messages = messages || @newMessage::jsonb
+WHERE id = @chatID
+RETURNING *;
