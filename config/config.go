@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
 	"os"
 )
@@ -39,5 +40,8 @@ func GetConfig() *Config {
 	if os.Getenv("HTTPS") == "true" {
 		config.ProtocolPrefix = "https"
 	}
+
+	fmt.Println(config)
+
 	return config
 }
