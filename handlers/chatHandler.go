@@ -4,6 +4,7 @@ import (
 	"cloud-solutions-api/authentication"
 	"cloud-solutions-api/chat"
 	"cloud-solutions-api/models"
+	"cloud-solutions-api/rabbitConnection"
 	"context"
 	"encoding/json"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -151,7 +152,13 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
 	}
 
-	// TODO: start the process to produce rag -> system_message; LLM -> assistant
+	err = hc.AIAssistantMessagePublisher.Publish(rabbitConnection.AIAssistantMessage{
+		Messages: retrievedChat.GetMessages(),
+	})
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Error publishing message to RabbitMQ"})
+	}
 
 	return c.JSON(http.StatusOK, retrievedChat)
 }

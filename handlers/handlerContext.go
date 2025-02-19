@@ -7,9 +7,10 @@ import (
 )
 
 type HandlerContext struct {
-	Queryer                   *models.Queries
-	DocumentIndexingPublisher *rabbitConnection.DocumentIndexingPublisher
-	Secret                    []byte
+	Queryer                     *models.Queries
+	DocumentIndexingPublisher   *rabbitConnection.DocumentIndexingPublisher
+	AIAssistantMessagePublisher *rabbitConnection.AIAssistantMessagePublisher
+	Secret                      []byte
 }
 
 func NewHandlerContext(configuration config.Config) *HandlerContext {
@@ -32,8 +33,13 @@ func NewHandlerContext(configuration config.Config) *HandlerContext {
 	if err != nil {
 		panic(err)
 	}
-
 	handlerContext.DocumentIndexingPublisher = documentIndexingPublisher
+
+	aiAssistantMessagePublisher, err := rabbitConnection.NewAIAssistantMessagePublisher()
+	if err != nil {
+		panic(err)
+	}
+	handlerContext.AIAssistantMessagePublisher = aiAssistantMessagePublisher
 
 	return handlerContext
 }

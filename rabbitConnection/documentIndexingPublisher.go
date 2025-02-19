@@ -9,13 +9,13 @@ type DocumentIndexingMessage struct {
 	DocumentText string `json:"document_text"`
 }
 
-const DOCUMENT_INDEXING_EXCHANGE = "document-indexing-exchange"
-const DOCUMENT_INDEXING_QUEUE = "document-indexing-queue"
+const DocumentIndexingExchangeName = "document-indexing-exchange"
+const DocumentIndexingQueueName = "document-indexing-queue"
 
 func NewDocumentIndexingPublisher() (*DocumentIndexingPublisher, error) {
 	rabbitMQPublisher, err := NewRabbitMQPublisher(
-		DOCUMENT_INDEXING_EXCHANGE,
-		DOCUMENT_INDEXING_QUEUE,
+		DocumentIndexingExchangeName,
+		DocumentIndexingQueueName,
 	)
 	if err != nil {
 		return nil, err
