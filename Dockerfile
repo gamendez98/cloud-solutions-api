@@ -25,7 +25,7 @@ WORKDIR /app
 
 # Copy binary from builder stage
 COPY --from=builder /app/main .
-COPY .env.docker .env
+COPY docker.env .env
 
 # Expose application port
 EXPOSE 8080

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"sync"
 )
 
 type RabbitMQPublisher struct {
@@ -24,6 +25,12 @@ func (publisher *RabbitMQPublisher) PublishJSON(message interface{}) error {
 
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
+	}
+
+	err = publisher.Connect()
+
+	if err != nil {
+		return err
 	}
 
 	if err := publisher.ch.Publish(
@@ -111,7 +118,15 @@ func (publisher *RabbitMQPublisher) DeclareAndBindQueue() error {
 var connection *amqp.Connection
 
 func GetConnection() (*amqp.Connection, error) {
+	connectionMutex := &sync.Mutex{}
+
 	if connection != nil && !connection.IsClosed() {
+		return connection, nil
+	}
+	connectionMutex.Lock()
+	defer connectionMutex.Unlock()
+
+	if connection != nil && !connection.IsClosed() { // Double-check after locking
 		return connection, nil
 	}
 	conf := config.GetConfig()
@@ -121,5 +136,9 @@ func GetConnection() (*amqp.Connection, error) {
 			conf.RabbitMQPassword,
 			conf.RabbitMQHost,
 			conf.RabbitMQPort)
-	return amqp.Dial(uri)
+	conn, err := amqp.Dial(uri)
+	if err == nil {
+		connection = conn
+	}
+	return conn, err
 }

@@ -1,24 +1,27 @@
 package document
 
 import (
+	"bytes"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/unidoc/unipdf/v3/extractor"
-	"github.com/unidoc/unipdf/v3/model"
+	"github.com/gen2brain/go-fitz"
+	"github.com/nguyenthenguyen/docx"
 )
 
 type extension string
 
 const (
-	PDF extension = ".pdf"
-	TXT extension = ".txt"
-	MD  extension = ".md"
-	DOC extension = ".doc"
+	PDF  extension = ".pdf"
+	TXT  extension = ".txt"
+	MD   extension = ".md"
+	DOCX extension = ".docx"
 )
 
 // SaveDocumentFile saves an uploaded file to the server and returns the file path or an error if the operation fails.
@@ -59,8 +62,8 @@ func ExtractTextFromDocumentFile(filePath string) (string, error) {
 		return ExtractTextFromPlainText(filePath)
 	case PDF:
 		return ExtractTextFromPDF(filePath)
-	case DOC:
-		return "", errors.New("unsupported format")
+	case DOCX:
+		return ExtractTextFromDocx(filePath)
 	}
 	return "", errors.New("unsupported format")
 }
@@ -86,43 +89,74 @@ func ExtractTextFromPlainText(filePath string) (string, error) {
 
 // ExtractTextFromPDF extracts text from a PDF file and returns it as a string.
 func ExtractTextFromPDF(filePath string) (string, error) {
-	// Open the PDF file.
-	file, err := os.Open(filePath)
+	// Open the PDF file
+	doc, err := fitz.New(filePath)
 	if err != nil {
-		return "", fmt.Errorf("failed to open file: %v", err)
+		return "", fmt.Errorf("failed to open PDF: %v", err)
 	}
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
+	defer func(doc *fitz.Document) {
+		_ = doc.Close()
+	}(doc)
 
-	pdfReader, err := model.NewPdfReader(file)
-	if err != nil {
-		return "", fmt.Errorf("failed to create PDF reader: %v", err)
-	}
-	numPages, err := pdfReader.GetNumPages()
-	if err != nil {
-		return "", fmt.Errorf("failed to get number of pages: %v", err)
-	}
-
+	// Extract text from each page
 	var extractedText string
-	for i := 1; i <= numPages; i++ {
-		page, err := pdfReader.GetPage(i)
+	for i := 0; i < doc.NumPage(); i++ {
+		text, err := doc.Text(i)
 		if err != nil {
-			return "", fmt.Errorf("failed to get page %d: %v", i, err)
+			return "", fmt.Errorf("failed to extract text from page %d: %v", i+1, err)
 		}
-
-		ex, err := extractor.New(page)
-		if err != nil {
-			return "", fmt.Errorf("failed to create extractor for page %d: %v", i, err)
-		}
-
-		text, err := ex.ExtractText()
-		if err != nil {
-			return "", fmt.Errorf("failed to extract text from page %d: %v", i, err)
-		}
-
 		extractedText += text + "\n"
 	}
 
 	return extractedText, nil
+}
+
+// ExtractTextFromDocx extracts text from a DOCX file and returns it as a string.
+func ExtractTextFromDocx(filePath string) (string, error) {
+	// Open the .doc file
+	doc, err := docx.ReadDocxFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open .doc file: %v", err)
+	}
+	defer func(doc *docx.ReplaceDocx) {
+		_ = doc.Close()
+	}(doc)
+
+	// Extract text from the document
+	text := doc.Editable().GetContent()
+	text, err = removeXMLTags(text)
+	if err != nil {
+		return "", fmt.Errorf("failed to remove XML tags: %v", err)
+	}
+
+	return text, nil
+}
+
+// removeXMLTags removes all XML tags and returns the text content.
+func removeXMLTags(xmlContent string) (string, error) {
+	// Create a decoder for the XML content
+	decoder := xml.NewDecoder(strings.NewReader(xmlContent))
+
+	// Buffer to store the extracted text
+	var textContent bytes.Buffer
+
+	// Iterate through the XML tokens
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break // End of XML content
+		}
+		if err != nil {
+			return "", fmt.Errorf("failed to decode XML: %v", err)
+		}
+
+		// Extract text content from character data
+		switch t := token.(type) {
+		case xml.CharData:
+			textContent.Write(t)
+			textContent.WriteRune('\n')
+		}
+	}
+
+	return strings.TrimSpace(textContent.String()), nil
 }
