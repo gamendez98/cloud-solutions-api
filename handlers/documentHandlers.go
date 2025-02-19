@@ -4,6 +4,7 @@ import (
 	"cloud-solutions-api/authentication"
 	"cloud-solutions-api/document"
 	"cloud-solutions-api/models"
+	"cloud-solutions-api/rabbitConnection"
 	"context"
 	"database/sql"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -48,7 +49,14 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 		return err
 	}
 
-	// TODO: enqueue for embedding creation
+	err = hc.DocumentIndexingPublisher.Publish(rabbitConnection.DocumentIndexingMessage{
+		DocumentId:   newDocument.ID,
+		DocumentText: newDocument.Text.String,
+	})
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Error publishing document to RabbitMQ"})
+	}
 
 	return c.JSON(http.StatusCreated, newDocument)
 }

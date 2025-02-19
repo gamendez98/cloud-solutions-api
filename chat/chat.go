@@ -12,7 +12,8 @@ type NewMessageParameters struct {
 }
 
 func NewMessageForChat(chat models.Chat, newMessage NewMessageParameters) models.Message {
-	messageCount := len(chat.GetMessages())
+	messages := chat.GetMessages()
+	messageCount := len(messages)
 	id := fmt.Sprintf("msg%d", messageCount)
 	currentTime := time.Now()
 	message := models.Message{

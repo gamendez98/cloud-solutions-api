@@ -8,6 +8,7 @@ require (
 	github.com/labstack/echo-jwt/v4 v4.3.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lib/pq v1.10.9
+	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/sqlc-dev/pqtype v0.3.0
 	github.com/unidoc/unipdf/v3 v3.66.0
 	golang.org/x/crypto v0.31.0

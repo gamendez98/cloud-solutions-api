@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -39,8 +40,11 @@ type Message struct {
 func (chat *Chat) GetMessages() []Message {
 	var messages []Message
 	if !chat.Messages.Valid {
-		return messages
+		panic(errors.New("chat does not have messages"))
 	}
-	_ = json.Unmarshal(chat.Messages.RawMessage, &messages)
+	err := json.Unmarshal(chat.Messages.RawMessage, &messages)
+	if err != nil {
+		panic(err)
+	}
 	return messages
 }

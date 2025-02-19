@@ -3,11 +3,13 @@ package handlers
 import (
 	"cloud-solutions-api/config"
 	"cloud-solutions-api/models"
+	"cloud-solutions-api/rabbitConnection"
 )
 
 type HandlerContext struct {
-	Queryer *models.Queries
-	Secret  []byte
+	Queryer                   *models.Queries
+	DocumentIndexingPublisher *rabbitConnection.DocumentIndexingPublisher
+	Secret                    []byte
 }
 
 func NewHandlerContext(configuration config.Config) *HandlerContext {
@@ -25,5 +27,13 @@ func NewHandlerContext(configuration config.Config) *HandlerContext {
 		panic(err)
 	}
 	handlerContext.Queryer = queryer
+
+	documentIndexingPublisher, err := rabbitConnection.NewDocumentIndexingPublisher()
+	if err != nil {
+		panic(err)
+	}
+
+	handlerContext.DocumentIndexingPublisher = documentIndexingPublisher
+
 	return handlerContext
 }
