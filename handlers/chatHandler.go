@@ -4,7 +4,7 @@ import (
 	"cloud-solutions-api/authentication"
 	"cloud-solutions-api/chat"
 	"cloud-solutions-api/models"
-	"cloud-solutions-api/rabbitConnection"
+	"cloud-solutions-api/rabbitMQPublishers"
 	"context"
 	"encoding/json"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -152,7 +152,7 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
 	}
 
-	err = hc.AIAssistantMessagePublisher.Publish(rabbitConnection.AIAssistantMessage{
+	err = hc.AIAssistantMessagePublisher.Publish(rabbitMQPublishers.AIAssistantMessage{
 		Messages: retrievedChat.GetMessages(),
 	})
 

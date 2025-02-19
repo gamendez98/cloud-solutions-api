@@ -3,13 +3,13 @@ package handlers
 import (
 	"cloud-solutions-api/config"
 	"cloud-solutions-api/models"
-	"cloud-solutions-api/rabbitConnection"
+	"cloud-solutions-api/rabbitMQPublishers"
 )
 
 type HandlerContext struct {
 	Queryer                     *models.Queries
-	DocumentIndexingPublisher   *rabbitConnection.DocumentIndexingPublisher
-	AIAssistantMessagePublisher *rabbitConnection.AIAssistantMessagePublisher
+	DocumentIndexingPublisher   *rabbitMQPublishers.DocumentIndexingPublisher
+	AIAssistantMessagePublisher *rabbitMQPublishers.AIAssistantMessagePublisher
 	Secret                      []byte
 }
 
@@ -29,13 +29,13 @@ func NewHandlerContext(configuration config.Config) *HandlerContext {
 	}
 	handlerContext.Queryer = queryer
 
-	documentIndexingPublisher, err := rabbitConnection.NewDocumentIndexingPublisher()
+	documentIndexingPublisher, err := rabbitMQPublishers.NewDocumentIndexingPublisher()
 	if err != nil {
 		panic(err)
 	}
 	handlerContext.DocumentIndexingPublisher = documentIndexingPublisher
 
-	aiAssistantMessagePublisher, err := rabbitConnection.NewAIAssistantMessagePublisher()
+	aiAssistantMessagePublisher, err := rabbitMQPublishers.NewAIAssistantMessagePublisher()
 	if err != nil {
 		panic(err)
 	}

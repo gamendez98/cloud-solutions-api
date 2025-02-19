@@ -1,4 +1,4 @@
-package rabbitConnection
+package rabbitMQPublishers
 
 type DocumentIndexingPublisher struct {
 	RabbitMQPublisher

@@ -1,4 +1,4 @@
-package rabbitConnection
+package rabbitMQPublishers
 
 import "cloud-solutions-api/models"
 

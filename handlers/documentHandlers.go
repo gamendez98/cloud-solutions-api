@@ -4,7 +4,7 @@ import (
 	"cloud-solutions-api/authentication"
 	"cloud-solutions-api/document"
 	"cloud-solutions-api/models"
-	"cloud-solutions-api/rabbitConnection"
+	"cloud-solutions-api/rabbitMQPublishers"
 	"context"
 	"database/sql"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -49,7 +49,7 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 		return err
 	}
 
-	err = hc.DocumentIndexingPublisher.Publish(rabbitConnection.DocumentIndexingMessage{
+	err = hc.DocumentIndexingPublisher.Publish(rabbitMQPublishers.DocumentIndexingMessage{
 		DocumentId:   newDocument.ID,
 		DocumentText: newDocument.Text.String,
 	})
