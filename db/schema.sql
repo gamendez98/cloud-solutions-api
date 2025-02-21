@@ -1,4 +1,6 @@
 
+-- Enable the pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE accounts
 (
@@ -29,5 +31,5 @@ CREATE TABLE chats
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     messages JSONB,
     account_id INTEGER NOT NULL REFERENCES accounts (id) ON DELETE CASCADE
-)
+);
 

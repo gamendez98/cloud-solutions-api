@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres  # Path to your custom Dockerfile
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/init.sql
+
+  rabbitmq:
+    image: rabbitmq:4.0.6-management
+    container_name: rabbitmq_container
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBIT_MQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_MQ_PASSWORD}
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app_container
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres_container
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_NAME: ${DB_NAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RABBIT_MQ_HOST: rabbitmq_container
+      RABBIT_MQ_PASSWORD: ${RABBIT_MQ_PASSWORD}
+      RABBIT_MQ_USERNAME: ${RABBIT_MQ_USERNAME}
+      RABBIT_MQ_PORT: 5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+
+volumes:
+  postgres_data:
