@@ -23,3 +23,6 @@ WHERE username = $1;
 INSERT INTO accounts (username, password_hash, email)
 VALUES ($1, $2, $3)
 RETURNING *;
+
+
+-- sqlc.arg(password_hash) json:"-"

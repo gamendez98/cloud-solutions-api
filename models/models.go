@@ -15,7 +15,7 @@ type Account struct {
 	CreatedAt    sql.NullTime `json:"createdAt"`
 	Username     string       `json:"username"`
 	Email        string       `json:"email"`
-	PasswordHash string       `json:"passwordHash"`
+	PasswordHash string       `json:"-"`
 }
 
 type Chat struct {

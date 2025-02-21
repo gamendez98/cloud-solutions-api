@@ -27,6 +27,8 @@ WORKDIR /app
 COPY --from=builder /app/main .
 COPY docker.env .env
 
+RUN mkdir "uploads"
+
 # Expose application port
 EXPOSE 8080
 

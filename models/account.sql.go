@@ -17,7 +17,7 @@ RETURNING id, created_at, username, email, password_hash
 
 type CreateAccountParams struct {
 	Username     string `json:"username"`
-	PasswordHash string `json:"passwordHash"`
+	PasswordHash string `json:"-"`
 	Email        string `json:"email"`
 }
 
@@ -80,7 +80,7 @@ WHERE username = $1
 
 type GetAccountPasswordHashByUsernameRow struct {
 	ID           int32  `json:"id"`
-	PasswordHash string `json:"passwordHash"`
+	PasswordHash string `json:"-"`
 }
 
 func (q *Queries) GetAccountPasswordHashByUsername(ctx context.Context, username string) (GetAccountPasswordHashByUsernameRow, error) {
@@ -97,7 +97,7 @@ WHERE id = $2
 `
 
 type UpdateAccountPasswordParams struct {
-	PasswordHash string `json:"passwordHash"`
+	PasswordHash string `json:"-"`
 	ID           int32  `json:"id"`
 }
 
