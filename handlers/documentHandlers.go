@@ -13,6 +13,49 @@ import (
 	"strconv"
 )
 
+// UserOwnsDocumentMiddleware is a middleware function to check if the currently
+// authenticated user owns the document specified in the request.
+func (hc *HandlerContext) UserOwnsDocumentMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		documentIDString := c.Param("documentID")
+
+		// Validate document ID format
+		documentID, err := strconv.Atoi(documentIDString)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, echo.Map{
+				"error": "Invalid document ID",
+			})
+		}
+
+		// Retrieve the current account
+		account, err := authentication.GetCurrentAccount(hc.Queryer, c)
+		if err != nil {
+			return c.JSON(
+				http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
+			)
+		}
+
+		// Check if the user owns the document
+		owned, err := hc.Queryer.AccountOwnsDocument(
+			context.Background(),
+			models.AccountOwnsDocumentParams{AccountID: account.ID, ID: int32(documentID)},
+		)
+		if err != nil {
+			return err
+		}
+
+		// Deny access if the user doesn't own the document
+		if !owned {
+			return c.JSON(http.StatusForbidden, echo.Map{
+				"error": "Forbidden: You do not own this document",
+			})
+		}
+
+		// If the user owns the document, proceed to the next handler
+		return next(c)
+	}
+}
+
 func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -71,26 +114,6 @@ func (hc *HandlerContext) DeleteDocumentByID(c echo.Context) error {
 		})
 	}
 
-	account, err := authentication.GetCurrentAccount(hc.Queryer, c)
-	if err != nil {
-		return c.JSON(
-			http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
-		)
-	}
-
-	owned, err := hc.Queryer.AccountOwnsDocument(
-		context.Background(),
-		models.AccountOwnsDocumentParams{AccountID: account.ID, ID: int32(documentID)},
-	)
-	if err != nil {
-		return err
-	}
-	if !owned {
-		return c.JSON(http.StatusForbidden, echo.Map{
-			"error": "Forbidden: You do not own this document",
-		})
-	}
-
 	err = hc.Queryer.DeleteDocument(
 		context.Background(),
 		int32(documentID),
@@ -108,5 +131,5 @@ func RegisterDocumentRoutes(e *echo.Echo, hc *HandlerContext) {
 	restricted := echojwt.JWT(hc.Secret)
 	documentGroup := e.Group("/documents")
 	documentGroup.POST("", hc.CreateDocument, restricted)
-	documentGroup.DELETE("/:documentID", hc.DeleteDocumentByID, restricted)
+	documentGroup.DELETE("/:documentID", hc.DeleteDocumentByID, restricted, hc.UserOwnsDocumentMiddleware)
 }
