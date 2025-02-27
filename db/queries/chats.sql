@@ -1,12 +1,12 @@
 -- Get chat by ID
 -- name: GetChatByID :one
-SELECT id, created_at, messages, account_id
+SELECT *
 FROM chats
 WHERE id = $1;
 
 -- List all chats by account_id
 -- name: ListChatsByAccountID :many
-SELECT id, created_at, messages, account_id
+SELECT *
 FROM chats
 WHERE account_id = $1
 ORDER BY created_at DESC;
@@ -15,14 +15,14 @@ ORDER BY created_at DESC;
 -- name: CreateChat :one
 INSERT INTO chats (messages, account_id)
 VALUES ($1, $2)
-RETURNING id, created_at, messages, account_id;
+RETURNING *;
 
 -- Update chat's messages
 -- name: UpdateChatMessages :one
 UPDATE chats
 SET messages = $1
 WHERE id = $2
-RETURNING id, created_at, messages, account_id;
+RETURNING *;
 
 -- Delete chat by ID
 -- name: DeleteChat :exec
@@ -46,6 +46,20 @@ WHERE account_id = $1;
 
 -- name: AddMessageToChat :one
 UPDATE chats
-SET messages = messages || @newMessage::jsonb
+SET messages       = messages || @newMessage::jsonb,
+    unread_messages= true
 WHERE id = @chatID
 RETURNING *;
+
+
+-- name: MarkAsReadByID :exec
+UPDATE chats
+SET unread_messages= false
+WHERE id = $1;
+
+
+-- name: IsUnread :one
+SELECT unread_messages
+FROM chats
+WHERE id = $1;
+

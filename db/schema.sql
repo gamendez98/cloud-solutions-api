@@ -1,11 +1,10 @@
-
 -- Enable the pgvector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE accounts
 (
     id            SERIAL PRIMARY KEY,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     username      TEXT NOT NULL UNIQUE,
     email         TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
@@ -19,7 +18,7 @@ CREATE TABLE documents
     name       TEXT    NOT NULL,
     text       TEXT,
     file_path  TEXT,
-    embedding VECTOR(384),
+    embedding  VECTOR(384),
     account_id INTEGER NOT NULL REFERENCES accounts (id) ON DELETE CASCADE
 );
 
@@ -27,9 +26,10 @@ CREATE TABLE documents
 
 CREATE TABLE chats
 (
-    id SERIAL PRIMARY KEY,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    messages JSONB,
-    account_id INTEGER NOT NULL REFERENCES accounts (id) ON DELETE CASCADE
+    id              SERIAL PRIMARY KEY,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    messages        JSONB,
+    account_id      INTEGER NOT NULL REFERENCES accounts (id) ON DELETE CASCADE,
+    unread_messages BOOLEAN   DEFAULT false
 );
 

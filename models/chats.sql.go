@@ -7,6 +7,7 @@ package models
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 
 	"github.com/sqlc-dev/pqtype"
@@ -33,9 +34,10 @@ func (q *Queries) AccountOwnsChat(ctx context.Context, arg AccountOwnsChatParams
 
 const addMessageToChat = `-- name: AddMessageToChat :one
 UPDATE chats
-SET messages = messages || $1::jsonb
+SET messages       = messages || $1::jsonb,
+    unread_messages= true
 WHERE id = $2
-RETURNING id, created_at, messages, account_id
+RETURNING id, created_at, messages, account_id, unread_messages
 `
 
 type AddMessageToChatParams struct {
@@ -51,6 +53,7 @@ func (q *Queries) AddMessageToChat(ctx context.Context, arg AddMessageToChatPara
 		&i.CreatedAt,
 		&i.Messages,
 		&i.AccountID,
+		&i.UnreadMessages,
 	)
 	return i, err
 }
@@ -58,7 +61,7 @@ func (q *Queries) AddMessageToChat(ctx context.Context, arg AddMessageToChatPara
 const createChat = `-- name: CreateChat :one
 INSERT INTO chats (messages, account_id)
 VALUES ($1, $2)
-RETURNING id, created_at, messages, account_id
+RETURNING id, created_at, messages, account_id, unread_messages
 `
 
 type CreateChatParams struct {
@@ -75,6 +78,7 @@ func (q *Queries) CreateChat(ctx context.Context, arg CreateChatParams) (Chat, e
 		&i.CreatedAt,
 		&i.Messages,
 		&i.AccountID,
+		&i.UnreadMessages,
 	)
 	return i, err
 }
@@ -92,7 +96,7 @@ func (q *Queries) DeleteChat(ctx context.Context, id int32) error {
 }
 
 const getChatByID = `-- name: GetChatByID :one
-SELECT id, created_at, messages, account_id
+SELECT id, created_at, messages, account_id, unread_messages
 FROM chats
 WHERE id = $1
 `
@@ -106,12 +110,13 @@ func (q *Queries) GetChatByID(ctx context.Context, id int32) (Chat, error) {
 		&i.CreatedAt,
 		&i.Messages,
 		&i.AccountID,
+		&i.UnreadMessages,
 	)
 	return i, err
 }
 
 const getChatsByAccountID = `-- name: GetChatsByAccountID :many
-SELECT id, created_at, messages, account_id
+SELECT id, created_at, messages, account_id, unread_messages
 FROM chats
 WHERE account_id = $1
 `
@@ -130,6 +135,7 @@ func (q *Queries) GetChatsByAccountID(ctx context.Context, accountID int32) ([]C
 			&i.CreatedAt,
 			&i.Messages,
 			&i.AccountID,
+			&i.UnreadMessages,
 		); err != nil {
 			return nil, err
 		}
@@ -144,8 +150,21 @@ func (q *Queries) GetChatsByAccountID(ctx context.Context, accountID int32) ([]C
 	return items, nil
 }
 
+const isUnread = `-- name: IsUnread :one
+SELECT unread_messages
+FROM chats
+WHERE id = $1
+`
+
+func (q *Queries) IsUnread(ctx context.Context, id int32) (sql.NullBool, error) {
+	row := q.db.QueryRowContext(ctx, isUnread, id)
+	var unread_messages sql.NullBool
+	err := row.Scan(&unread_messages)
+	return unread_messages, err
+}
+
 const listChatsByAccountID = `-- name: ListChatsByAccountID :many
-SELECT id, created_at, messages, account_id
+SELECT id, created_at, messages, account_id, unread_messages
 FROM chats
 WHERE account_id = $1
 ORDER BY created_at DESC
@@ -166,6 +185,7 @@ func (q *Queries) ListChatsByAccountID(ctx context.Context, accountID int32) ([]
 			&i.CreatedAt,
 			&i.Messages,
 			&i.AccountID,
+			&i.UnreadMessages,
 		); err != nil {
 			return nil, err
 		}
@@ -180,11 +200,22 @@ func (q *Queries) ListChatsByAccountID(ctx context.Context, accountID int32) ([]
 	return items, nil
 }
 
+const markAsReadByID = `-- name: MarkAsReadByID :exec
+UPDATE chats
+SET unread_messages= false
+WHERE id = $1
+`
+
+func (q *Queries) MarkAsReadByID(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, markAsReadByID, id)
+	return err
+}
+
 const updateChatMessages = `-- name: UpdateChatMessages :one
 UPDATE chats
 SET messages = $1
 WHERE id = $2
-RETURNING id, created_at, messages, account_id
+RETURNING id, created_at, messages, account_id, unread_messages
 `
 
 type UpdateChatMessagesParams struct {
@@ -201,6 +232,7 @@ func (q *Queries) UpdateChatMessages(ctx context.Context, arg UpdateChatMessages
 		&i.CreatedAt,
 		&i.Messages,
 		&i.AccountID,
+		&i.UnreadMessages,
 	)
 	return i, err
 }

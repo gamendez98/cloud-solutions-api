@@ -19,10 +19,11 @@ type Account struct {
 }
 
 type Chat struct {
-	ID        int32                 `json:"id"`
-	CreatedAt sql.NullTime          `json:"createdAt"`
-	Messages  pqtype.NullRawMessage `json:"messages"`
-	AccountID int32                 `json:"accountId"`
+	ID             int32                 `json:"id"`
+	CreatedAt      sql.NullTime          `json:"createdAt"`
+	Messages       pqtype.NullRawMessage `json:"messages"`
+	AccountID      int32                 `json:"accountId"`
+	UnreadMessages sql.NullBool          `json:"unreadMessages"`
 }
 
 type Document struct {
