@@ -11,6 +11,7 @@ import (
 func main() {
 	// Create a new Echo instance
 	e := echo.New()
+	e.Use(middleware.CORS())
 
 	configuration := config.GetConfig()
 

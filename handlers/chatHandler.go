@@ -152,6 +152,7 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 
 	err = hc.AIAssistantMessagePublisher.Publish(rabbitMQPublishers.AIAssistantMessage{
 		Messages: retrievedChat.GetMessages(),
+		ChatId:   retrievedChat.ID,
 	})
 
 	if err != nil {

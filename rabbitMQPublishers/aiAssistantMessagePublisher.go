@@ -7,6 +7,7 @@ type AIAssistantMessagePublisher struct {
 }
 
 type AIAssistantMessage struct {
+	ChatId   int32            `json:"chat_id"`
 	Messages []models.Message `json:"messages"`
 }
 
