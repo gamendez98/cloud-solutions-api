@@ -34,10 +34,9 @@ func (q *Queries) AccountOwnsChat(ctx context.Context, arg AccountOwnsChatParams
 
 const addMessageToChat = `-- name: AddMessageToChat :one
 UPDATE chats
-SET messages       = messages || $1::jsonb,
-    unread_messages= true
+SET messages = messages || $1::jsonb
 WHERE id = $2
-RETURNING id, created_at, messages, account_id, unread_messages
+    RETURNING id, created_at, messages, account_id, unread_messages
 `
 
 type AddMessageToChatParams struct {
@@ -60,8 +59,7 @@ func (q *Queries) AddMessageToChat(ctx context.Context, arg AddMessageToChatPara
 
 const createChat = `-- name: CreateChat :one
 INSERT INTO chats (messages, account_id)
-VALUES ($1, $2)
-RETURNING id, created_at, messages, account_id, unread_messages
+VALUES ($1, $2) RETURNING id, created_at, messages, account_id, unread_messages
 `
 
 type CreateChatParams struct {
@@ -214,8 +212,7 @@ func (q *Queries) MarkAsReadByID(ctx context.Context, id int32) error {
 const updateChatMessages = `-- name: UpdateChatMessages :one
 UPDATE chats
 SET messages = $1
-WHERE id = $2
-RETURNING id, created_at, messages, account_id, unread_messages
+WHERE id = $2 RETURNING id, created_at, messages, account_id, unread_messages
 `
 
 type UpdateChatMessagesParams struct {
