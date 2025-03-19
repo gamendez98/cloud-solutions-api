@@ -7,18 +7,20 @@ import (
 )
 
 type Config struct {
-	DbHost           string
-	DbPort           string
-	DbName           string
-	DbUser           string
-	DbPassword       string
-	RabbitMQHost     string
-	RabbitMQUsername string
-	RabbitMQPassword string
-	RabbitMQPort     string
-	Host             string
-	Secret           string
-	ProtocolPrefix   string
+	BucketName            string
+	GCPServiceAccountFile string
+	DbHost                string
+	DbPort                string
+	DbName                string
+	DbUser                string
+	DbPassword            string
+	RabbitMQHost          string
+	RabbitMQUsername      string
+	RabbitMQPassword      string
+	RabbitMQPort          string
+	Host                  string
+	Secret                string
+	ProtocolPrefix        string
 }
 
 var config *Config
@@ -34,6 +36,8 @@ func GetConfig() *Config {
 
 	config = new(Config)
 
+	config.BucketName = os.Getenv("BUCKET_NAME")
+	config.GCPServiceAccountFile = os.Getenv("GCP_SERVICE_ACCOUNT_FILE")
 	config.DbHost = os.Getenv("DB_HOST")
 	config.DbPort = os.Getenv("DB_PORT")
 	config.DbName = os.Getenv("DB_NAME")
