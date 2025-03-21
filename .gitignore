@@ -29,3 +29,5 @@ docker.env
 .idea
 
 uploads
+
+api-service-account.json

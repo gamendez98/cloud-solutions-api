@@ -27,44 +27,9 @@ const (
 	DOCX extension = ".docx"
 )
 
-// SaveDocumentFile saves an uploaded file to the server and returns the file path or an error if the operation fails.
-func SaveDocumentFile(file *multipart.FileHeader) (string, error) {
-	filePath := "./uploads/" + file.Filename
-	dst, err := os.Create(filePath)
-	if err != nil {
-		return "", err
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		return "", err
-	}
-	defer func(src multipart.File) {
-		_ = src.Close()
-	}(src)
-
-	defer func(dst *os.File) {
-		_ = dst.Close()
-	}(dst)
-
-	if _, err = io.Copy(dst, src); err != nil {
-		return "", err
-	}
-
-	return filePath, nil
-}
-
 // SaveDocumentFileInBucket uploads a file to GCP Cloud Storage and returns the file URL or an error.
 func SaveDocumentFileInBucket(file *multipart.FileHeader, bucket *storage.BucketHandle) (string, error) {
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to create storage client: %w", err)
-	}
-	defer func(client *storage.Client) {
-		_ = client.Close()
-	}(client)
-
 	src, err := file.Open()
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %w", err)
