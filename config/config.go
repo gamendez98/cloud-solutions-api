@@ -9,6 +9,10 @@ import (
 type Config struct {
 	BucketName            string
 	GCPServiceAccountFile string
+	GCPProjectID          string
+	GCPLocation           string
+	GeminiModelID         string
+	GeminiAPIKey          string
 	DbHost                string
 	DbPort                string
 	DbName                string
@@ -38,6 +42,10 @@ func GetConfig() *Config {
 
 	config.BucketName = os.Getenv("BUCKET_NAME")
 	config.GCPServiceAccountFile = os.Getenv("GCP_SERVICE_ACCOUNT_FILE")
+	config.GCPProjectID = os.Getenv("GCP_PROJECT_ID")
+	config.GCPLocation = os.Getenv("GCP_LOCATION")
+	config.GeminiModelID = os.Getenv("GEMINI_MODEL_ID")
+	config.GeminiAPIKey = os.Getenv("GEMINI_API_KEY")
 	config.DbHost = os.Getenv("DB_HOST")
 	config.DbPort = os.Getenv("DB_PORT")
 	config.DbName = os.Getenv("DB_NAME")

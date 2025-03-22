@@ -7,6 +7,7 @@ import (
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
+	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
 )
 
@@ -16,6 +17,8 @@ type HandlerContext struct {
 	AIAssistantMessagePublisher *rabbitMQPublishers.AIAssistantMessagePublisher
 	StorageClient               *storage.Client
 	Bucket                      *storage.BucketHandle
+	GeminiClient                *genai.Client
+	GeminiModel                 *genai.GenerativeModel
 	Secret                      []byte
 }
 
@@ -56,5 +59,17 @@ func NewHandlerContext(configuration config.Config) *HandlerContext {
 	}
 	handlerContext.Bucket = handlerContext.StorageClient.Bucket(configuration.BucketName)
 
+	handlerContext.GeminiClient, err = genai.NewClient(context.Background(), option.WithAPIKey(configuration.GeminiAPIKey))
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	handlerContext.GeminiModel = handlerContext.GeminiClient.GenerativeModel(configuration.GeminiModelID)
+
 	return handlerContext
+}
+
+func (hc *HandlerContext) Close() {
+	_ = hc.StorageClient.Close()
+	_ = hc.GeminiClient.Close()
 }
