@@ -2,6 +2,7 @@ package document
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -10,7 +11,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/gen2brain/go-fitz"
 	"github.com/nguyenthenguyen/docx"
 )
@@ -24,31 +27,29 @@ const (
 	DOCX extension = ".docx"
 )
 
-// SaveDocumentFile saves an uploaded file to the server and returns the file path or an error if the operation fails.
-func SaveDocumentFile(file *multipart.FileHeader) (string, error) {
-	filePath := "./uploads/" + file.Filename
-	dst, err := os.Create(filePath)
-	if err != nil {
-		return "", err
-	}
-
+// SaveDocumentFileInBucket uploads a file to GCP Cloud Storage and returns the file URL or an error.
+func SaveDocumentFileInBucket(file *multipart.FileHeader, bucket *storage.BucketHandle) (string, error) {
+	ctx := context.Background()
 	src, err := file.Open()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open file: %w", err)
 	}
 	defer func(src multipart.File) {
 		_ = src.Close()
 	}(src)
 
-	defer func(dst *os.File) {
-		_ = dst.Close()
-	}(dst)
+	object := bucket.Object(fmt.Sprintf("uploads/%d-%s", time.Now().Unix(), file.Filename))
+	writer := object.NewWriter(ctx)
+	defer func(writer *storage.Writer) {
+		_ = writer.Close()
+	}(writer)
 
-	if _, err = io.Copy(dst, src); err != nil {
-		return "", err
+	if _, err = io.Copy(writer, src); err != nil {
+		return "", fmt.Errorf("failed to copy file to storage: %w", err)
 	}
 
-	return filePath, nil
+	url := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucket.BucketName(), object.ObjectName())
+	return url, nil
 }
 
 // ExtractTextFromDocumentFile extracts text content from a document file based on its file extension.

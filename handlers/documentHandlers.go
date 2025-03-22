@@ -71,7 +71,7 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 		)
 	}
 
-	path, err := document.SaveDocumentFile(file)
+	path, err := document.SaveDocumentFileInBucket(file, hc.Bucket)
 	if err != nil {
 		return err
 	}
