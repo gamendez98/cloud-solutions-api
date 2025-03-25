@@ -14,13 +14,15 @@ ORDER BY created_at DESC;
 -- Create a new chat
 -- name: CreateChat :one
 INSERT INTO chats (messages, account_id)
-VALUES ($1, $2) RETURNING *;
+VALUES ($1, $2)
+RETURNING *;
 
 -- Update chat's messages
 -- name: UpdateChatMessages :one
 UPDATE chats
 SET messages = $1
-WHERE id = $2 RETURNING *;
+WHERE id = $2
+RETURNING *;
 
 -- Delete chat by ID
 -- name: DeleteChat :exec
@@ -46,12 +48,18 @@ WHERE account_id = $1;
 UPDATE chats
 SET messages = messages || @newMessage::jsonb
 WHERE id = @chatID
-    RETURNING *;
+RETURNING *;
 
 
 -- name: MarkAsReadByID :exec
 UPDATE chats
 SET unread_messages= false
+WHERE id = $1;
+
+
+-- name: MarkAsUnreadByID :exec
+UPDATE chats
+SET unread_messages = true
 WHERE id = $1;
 
 

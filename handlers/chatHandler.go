@@ -168,6 +168,14 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 			Chatid:     retrievedChat.ID,
 			Newmessage: newAssistantMessageJSON,
 		})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		err = hc.Queryer.MarkAsUnreadByID(context.Background(), retrievedChat.ID)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}()
 
 	return c.JSON(http.StatusOK, retrievedChat)
