@@ -16,7 +16,6 @@ func main() {
 	configuration := config.GetConfig()
 
 	handlerContext := handlers.NewHandlerContext(*configuration)
-	defer handlerContext.Close()
 
 	// Middleware
 	e.Use(middleware.Logger())  // Logs all HTTP requests

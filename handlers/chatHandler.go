@@ -4,9 +4,9 @@ import (
 	"cloud-solutions-api/authentication"
 	"cloud-solutions-api/chat"
 	"cloud-solutions-api/models"
+	"cloud-solutions-api/rabbitMQPublishers"
 	"context"
 	"encoding/json"
-	"fmt"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/sqlc-dev/pqtype"
@@ -150,25 +150,14 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
 	}
 
-	go func() {
-		newAssistantMessage, err := chat.GetAssistantMessage(
-			retrievedChat,
-			hc.GeminiModel,
-		)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		newAssistantMessageJSON, err := json.Marshal(newAssistantMessage)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		retrievedChat, err = hc.Queryer.AddMessageToChat(context.Background(), models.AddMessageToChatParams{
-			Chatid:     retrievedChat.ID,
-			Newmessage: newAssistantMessageJSON,
-		})
-	}()
+	err = hc.AIAssistantMessagePublisher.Publish(rabbitMQPublishers.AIAssistantMessage{
+		Messages: retrievedChat.GetMessages(),
+		ChatId:   retrievedChat.ID,
+	})
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Error publishing message to RabbitMQ"})
+	}
 
 	return c.JSON(http.StatusOK, retrievedChat)
 }
