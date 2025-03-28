@@ -209,17 +209,6 @@ func (q *Queries) MarkAsReadByID(ctx context.Context, id int32) error {
 	return err
 }
 
-const markAsUnreadByID = `-- name: MarkAsUnreadByID :exec
-UPDATE chats
-SET unread_messages = true
-WHERE id = $1
-`
-
-func (q *Queries) MarkAsUnreadByID(ctx context.Context, id int32) error {
-	_, err := q.db.ExecContext(ctx, markAsUnreadByID, id)
-	return err
-}
-
 const updateChatMessages = `-- name: UpdateChatMessages :one
 UPDATE chats
 SET messages = $1
