@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -28,70 +27,94 @@ const (
 )
 
 // SaveDocumentFileInBucket uploads a file to GCP Cloud Storage and returns the file URL or an error.
-func SaveDocumentFileInBucket(file *multipart.FileHeader, bucket *storage.BucketHandle) (string, error) {
+func SaveDocumentFileInBucket(fileHeader *multipart.FileHeader, bucket *storage.BucketHandle) (string, error) {
 	ctx := context.Background()
-	src, err := file.Open()
+	src, err := fileHeader.Open()
 	if err != nil {
-		return "", fmt.Errorf("failed to open file: %w", err)
+		return "", fmt.Errorf("failed to open fileHeader: %w", err)
 	}
 	defer func(src multipart.File) {
 		_ = src.Close()
 	}(src)
 
-	object := bucket.Object(fmt.Sprintf("uploads/%d-%s", time.Now().Unix(), file.Filename))
+	object := bucket.Object(fmt.Sprintf("uploads/%d-%s", time.Now().Unix(), fileHeader.Filename))
 	writer := object.NewWriter(ctx)
 	defer func(writer *storage.Writer) {
 		_ = writer.Close()
 	}(writer)
 
 	if _, err = io.Copy(writer, src); err != nil {
-		return "", fmt.Errorf("failed to copy file to storage: %w", err)
+		return "", fmt.Errorf("failed to copy fileHeader to storage: %w", err)
 	}
 
 	url := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucket.BucketName(), object.ObjectName())
 	return url, nil
 }
 
+// extractFilePath extracts the GCS file path from the full URL
+func extractFilePath(gcsURL string, bucket *storage.BucketHandle) (string, error) {
+	prefix := fmt.Sprintf("https://storage.googleapis.com/%s/", bucket.BucketName())
+	if !strings.HasPrefix(gcsURL, prefix) {
+		return "", fmt.Errorf("invalid GCS URL")
+	}
+
+	// Remove the prefix to get the bucket name and file path
+	path := strings.TrimPrefix(gcsURL, prefix)
+
+	return path, nil
+}
+
+// DeleteDocumentFileFromBucket deletes a file from GCP Cloud Storage and optionally returns an error
+func DeleteDocumentFileFromBucket(fileURL string, bucket *storage.BucketHandle) error {
+	ctx := context.Background()
+	filePath, err := extractFilePath(fileURL, bucket)
+	if err != nil {
+		return fmt.Errorf("failed to extract file path from URL: %w", err)
+	}
+	object := bucket.Object(filePath)
+	if err := object.Delete(ctx); err != nil {
+		return fmt.Errorf("failed to delete file from storage: %w", err)
+	}
+	return nil
+}
+
 // ExtractTextFromDocumentFile extracts text content from a document file based on its file extension.
 // Supported formats include plain text (TXT, MD) and PDF. Unsupported formats return an error.
-func ExtractTextFromDocumentFile(filePath string) (string, error) {
-	fileExtension := extension(filepath.Ext(filePath))
+func ExtractTextFromDocumentFile(fileHeader *multipart.FileHeader) (string, error) {
+	fileExtension := extension(filepath.Ext(fileHeader.Filename))
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return "", fmt.Errorf("failed to open fileHeader: %w", err)
+	}
+	defer func(file multipart.File) {
+		_ = file.Close()
+	}(file)
+	data, err := io.ReadAll(file)
+
 	switch fileExtension {
 	case TXT:
-		return ExtractTextFromPlainText(filePath)
+		return ExtractTextFromPlainText(data), nil
 	case MD:
-		return ExtractTextFromPlainText(filePath)
+		return ExtractTextFromPlainText(data), nil
 	case PDF:
-		return ExtractTextFromPDF(filePath)
+		return ExtractTextFromPDF(data)
 	case DOCX:
-		return ExtractTextFromDocx(filePath)
+		return ExtractTextFromDocx(data)
 	}
 	return "", errors.New("unsupported format")
 }
 
 // ExtractTextFromPlainText reads the content of a plain text file and returns it as a string.
 // It takes the file path as input and returns an error if the operation fails.
-func ExtractTextFromPlainText(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
-
-	content, err := io.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-
-	return string(content), nil
+func ExtractTextFromPlainText(data []byte) string {
+	return string(data)
 }
 
 // ExtractTextFromPDF extracts text from a PDF file and returns it as a string.
-func ExtractTextFromPDF(filePath string) (string, error) {
+func ExtractTextFromPDF(data []byte) (string, error) {
 	// Open the PDF file
-	doc, err := fitz.New(filePath)
+	doc, err := fitz.NewFromReader(bytes.NewReader(data))
 	if err != nil {
 		return "", fmt.Errorf("failed to open PDF: %v", err)
 	}
@@ -112,25 +135,30 @@ func ExtractTextFromPDF(filePath string) (string, error) {
 	return extractedText, nil
 }
 
-// ExtractTextFromDocx extracts text from a DOCX file and returns it as a string.
-func ExtractTextFromDocx(filePath string) (string, error) {
-	// Open the .doc file
-	doc, err := docx.ReadDocxFile(filePath)
+// ExtractTextFromDocx extracts text from a DOCX file given as []byte.
+func ExtractTextFromDocx(data []byte) (string, error) {
+	// Read DOCX from bytes
+	reader := bytes.NewReader(data)
+
+	// Read DOCX from memory
+	doc, err := docx.ReadDocxFromMemory(reader, int64(len(data)))
 	if err != nil {
-		return "", fmt.Errorf("failed to open .doc file: %v", err)
+		return "", fmt.Errorf("failed to open DOCX from bytes: %w", err)
 	}
 	defer func(doc *docx.ReplaceDocx) {
 		_ = doc.Close()
 	}(doc)
 
-	// Extract text from the document
+	// Extract raw text
 	text := doc.Editable().GetContent()
-	text, err = removeXMLTags(text)
+
+	// Remove XML tags (if needed)
+	cleanText, err := removeXMLTags(text)
 	if err != nil {
-		return "", fmt.Errorf("failed to remove XML tags: %v", err)
+		return "", fmt.Errorf("failed to remove XML tags: %w", err)
 	}
 
-	return text, nil
+	return cleanText, nil
 }
 
 // removeXMLTags removes all XML tags and returns the text content.

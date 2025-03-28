@@ -16,6 +16,7 @@ require (
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/sqlc-dev/pqtype v0.3.0
 	golang.org/x/crypto v0.35.0
+	google.golang.org/api v0.224.0
 )
 
 require (
@@ -63,7 +64,6 @@ require (
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
-	google.golang.org/api v0.224.0 // indirect
 	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250303144028-a0af3efb3deb // indirect

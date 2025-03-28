@@ -7,6 +7,7 @@ import (
 	"cloud-solutions-api/rabbitMQPublishers"
 	"context"
 	"database/sql"
+	"fmt"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -57,7 +58,7 @@ func (hc *HandlerContext) UserOwnsDocumentMiddleware(next echo.HandlerFunc) echo
 }
 
 func (hc *HandlerContext) CreateDocument(c echo.Context) error {
-	file, err := c.FormFile("file")
+	fileHeader, err := c.FormFile("file")
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"error": "Invalid request payload",
@@ -71,17 +72,20 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 		)
 	}
 
-	path, err := document.SaveDocumentFileInBucket(file, hc.Bucket)
+	path, err := document.SaveDocumentFileInBucket(fileHeader, hc.Bucket)
 	if err != nil {
 		return err
 	}
 
-	text, err := document.ExtractTextFromDocumentFile(path)
+	text, err := document.ExtractTextFromDocumentFile(fileHeader)
+	if err != nil {
+		fmt.Printf("error extracting text from document: %w", err)
+	}
 
 	newDocument, err := hc.Queryer.CreateDocument(
 		context.Background(),
 		models.CreateDocumentParams{
-			Name:      file.Filename,
+			Name:      fileHeader.Filename,
 			Text:      sql.NullString{String: text, Valid: true},
 			FilePath:  sql.NullString{String: path, Valid: true},
 			Embedding: nil,
@@ -114,6 +118,13 @@ func (hc *HandlerContext) DeleteDocumentByID(c echo.Context) error {
 		})
 	}
 
+	retrievedDocument, err := hc.Queryer.GetDocumentByID(context.Background(), int32(documentID))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "Invalid document ID",
+		})
+	}
+
 	err = hc.Queryer.DeleteDocument(
 		context.Background(),
 		int32(documentID),
@@ -121,6 +132,11 @@ func (hc *HandlerContext) DeleteDocumentByID(c echo.Context) error {
 
 	if err != nil {
 		return err
+	}
+
+	err = document.DeleteDocumentFileFromBucket(retrievedDocument.FilePath.String, hc.Bucket)
+	if err != nil {
+		fmt.Print(err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{})
