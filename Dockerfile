@@ -31,7 +31,7 @@ COPY api-service-account.json api-service-account.json
 RUN mkdir "uploads"
 
 # Expose application port
-EXPOSE 8080
+EXPOSE 80
 
 # Command to run the executable
 CMD ["./main"]
