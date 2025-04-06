@@ -37,7 +37,7 @@ func GetConfig() *Config {
 	config = new(Config)
 
 	config.BucketName = os.Getenv("BUCKET_NAME")
-	config.GCPServiceAccountFile = os.Getenv("GCP_SERVICE_ACCOUNT_FILE")
+	config.GCPServiceAccountFile = "api-service-account.json"
 	config.DbHost = os.Getenv("DB_HOST")
 	config.DbPort = os.Getenv("DB_PORT")
 	config.DbName = os.Getenv("DB_NAME")

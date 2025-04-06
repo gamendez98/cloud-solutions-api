@@ -26,6 +26,7 @@ WORKDIR /app
 # Copy binary from builder stage
 COPY --from=builder /app/main .
 COPY docker.env .env
+COPY api-service-account.json api-service-account.json
 
 RUN mkdir "uploads"
 
