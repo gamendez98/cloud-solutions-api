@@ -27,5 +27,10 @@ func main() {
 	handlers.RegisterChatRoutes(e, handlerContext)
 
 	// Start server
-	e.Logger.Fatal(e.Start(":8080"))
+	port := ":80"
+	if configuration.Development {
+		port = ":8080"
+	}
+	e.Logger.Info("Server is running on port " + port)
+	e.Logger.Fatal(e.Start(port))
 }

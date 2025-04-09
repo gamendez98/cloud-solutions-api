@@ -21,6 +21,7 @@ type Config struct {
 	Host                  string
 	Secret                string
 	ProtocolPrefix        string
+	Development           bool
 }
 
 var config *Config
@@ -48,6 +49,7 @@ func GetConfig() *Config {
 	config.RabbitMQPassword = os.Getenv("RABBIT_MQ_PASSWORD")
 	config.RabbitMQPort = os.Getenv("RABBIT_MQ_PORT")
 	config.Secret = os.Getenv("SECRET")
+	config.Development = os.Getenv("DEVELOPMENT") == "true"
 	config.ProtocolPrefix = "http"
 	if os.Getenv("HTTPS") == "true" {
 		config.ProtocolPrefix = "https"
