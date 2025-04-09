@@ -103,11 +103,18 @@ const getDocumentsByAccountID = `-- name: GetDocumentsByAccountID :many
 SELECT id, created_at, name, text, file_path, embedding, account_id
 FROM documents
 WHERE account_id = $1
+LIMIT $2 OFFSET $3
 `
 
+type GetDocumentsByAccountIDParams struct {
+	AccountID int32 `json:"accountId"`
+	Limit     int32 `json:"limit"`
+	Offset    int32 `json:"offset"`
+}
+
 // Get all documents for a specific account
-func (q *Queries) GetDocumentsByAccountID(ctx context.Context, accountID int32) ([]Document, error) {
-	rows, err := q.db.QueryContext(ctx, getDocumentsByAccountID, accountID)
+func (q *Queries) GetDocumentsByAccountID(ctx context.Context, arg GetDocumentsByAccountIDParams) ([]Document, error) {
+	rows, err := q.db.QueryContext(ctx, getDocumentsByAccountID, arg.AccountID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

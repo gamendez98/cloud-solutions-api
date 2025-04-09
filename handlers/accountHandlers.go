@@ -8,8 +8,23 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"strconv"
 	"time"
 )
+
+func getOffsetLimit(c echo.Context) (int, int) {
+	offsetString := c.QueryParam("offset")
+	limitString := c.QueryParam("limit")
+	offset, err := strconv.Atoi(offsetString)
+	if err != nil {
+		offset = 0
+	}
+	limit, err := strconv.Atoi(limitString)
+	if err != nil {
+		limit = 10
+	}
+	return offset, limit
+}
 
 func (hc *HandlerContext) login(c echo.Context) error {
 	username := c.FormValue("username")
@@ -94,6 +109,7 @@ func (hc *HandlerContext) GetAccountByID(c echo.Context) error {
 
 func (hc *HandlerContext) GetAccountDocuments(c echo.Context) error {
 	account, err := authentication.GetCurrentAccount(hc.Queryer, c)
+	offset, limit := getOffsetLimit(c)
 	if err != nil {
 		return c.JSON(
 			http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
@@ -101,7 +117,11 @@ func (hc *HandlerContext) GetAccountDocuments(c echo.Context) error {
 	}
 	documents, err := hc.Queryer.GetDocumentsByAccountID(
 		context.Background(),
-		account.ID,
+		models.GetDocumentsByAccountIDParams{
+			AccountID: account.ID,
+			Offset:    int32(offset),
+			Limit:     int32(limit),
+		},
 	)
 	if err != nil {
 		return err
@@ -113,6 +133,7 @@ func (hc *HandlerContext) GetAccountDocuments(c echo.Context) error {
 
 func (hc *HandlerContext) GetAccountChats(c echo.Context) error {
 	account, err := authentication.GetCurrentAccount(hc.Queryer, c)
+	offset, limit := getOffsetLimit(c)
 	if err != nil {
 		return c.JSON(
 			http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
@@ -121,7 +142,11 @@ func (hc *HandlerContext) GetAccountChats(c echo.Context) error {
 
 	chats, err := hc.Queryer.GetChatsByAccountID(
 		context.Background(),
-		account.ID,
+		models.GetChatsByAccountIDParams{
+			AccountID: account.ID,
+			Offset:    int32(offset),
+			Limit:     int32(limit),
+		},
 	)
 	if err != nil {
 		return err

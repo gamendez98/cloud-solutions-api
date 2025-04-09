@@ -117,10 +117,18 @@ const getChatsByAccountID = `-- name: GetChatsByAccountID :many
 SELECT id, created_at, messages, account_id, unread_messages
 FROM chats
 WHERE account_id = $1
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetChatsByAccountID(ctx context.Context, accountID int32) ([]Chat, error) {
-	rows, err := q.db.QueryContext(ctx, getChatsByAccountID, accountID)
+type GetChatsByAccountIDParams struct {
+	AccountID int32 `json:"accountId"`
+	Limit     int32 `json:"limit"`
+	Offset    int32 `json:"offset"`
+}
+
+func (q *Queries) GetChatsByAccountID(ctx context.Context, arg GetChatsByAccountIDParams) ([]Chat, error) {
+	rows, err := q.db.QueryContext(ctx, getChatsByAccountID, arg.AccountID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

@@ -39,7 +39,9 @@ SELECT EXISTS(SELECT 1
 -- name: GetChatsByAccountID :many
 SELECT *
 FROM chats
-WHERE account_id = $1;
+WHERE account_id = $1
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
 
 
 -- name: AddMessageToChat :one

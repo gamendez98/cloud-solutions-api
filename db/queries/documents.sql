@@ -21,7 +21,8 @@ WHERE id = $1;
 -- name: GetDocumentsByAccountID :many
 SELECT id, created_at, name, text, file_path, embedding, account_id
 FROM documents
-WHERE account_id = $1;
+WHERE account_id = $1
+LIMIT $2 OFFSET $3;
 
 
 -- name: AccountOwnsDocument :one
