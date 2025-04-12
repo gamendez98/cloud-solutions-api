@@ -20,6 +20,9 @@ RUN go build -a -installsuffix cgo -o main .
 # Use a minimal image for the final artifact
 FROM debian:bookworm-slim
 
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+
+
 # Set working directory for the app
 WORKDIR /app
 
