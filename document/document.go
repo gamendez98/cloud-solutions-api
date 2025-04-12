@@ -31,6 +31,7 @@ func SaveDocumentFileInBucket(fileHeader *multipart.FileHeader, bucket *storage.
 	ctx := context.Background()
 	src, err := fileHeader.Open()
 	if err != nil {
+		fmt.Printf("ERROR: %w", err)
 		return "", fmt.Errorf("failed to open fileHeader: %w", err)
 	}
 	defer func(src multipart.File) {
@@ -39,12 +40,15 @@ func SaveDocumentFileInBucket(fileHeader *multipart.FileHeader, bucket *storage.
 
 	object := bucket.Object(fmt.Sprintf("uploads/%d-%s", time.Now().Unix(), fileHeader.Filename))
 	writer := object.NewWriter(ctx)
-	defer func(writer *storage.Writer) {
-		_ = writer.Close()
-	}(writer)
 
 	if _, err = io.Copy(writer, src); err != nil {
+		fmt.Printf("ERROR: %w", err)
 		return "", fmt.Errorf("failed to copy fileHeader to storage: %w", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		fmt.Printf("ERROR: %w", err)
+		return "", fmt.Errorf("failed to close writer: %w", err)
 	}
 
 	url := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucket.BucketName(), object.ObjectName())

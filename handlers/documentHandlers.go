@@ -60,6 +60,7 @@ func (hc *HandlerContext) UserOwnsDocumentMiddleware(next echo.HandlerFunc) echo
 func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
+		fmt.Printf("ERROR: %w", err)
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"error": "Invalid request payload",
 		})
@@ -67,6 +68,7 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 
 	account, err := authentication.GetCurrentAccount(hc.Queryer, c)
 	if err != nil {
+		fmt.Printf("ERROR: %w", err)
 		return c.JSON(
 			http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
 		)
@@ -74,6 +76,7 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 
 	path, err := document.SaveDocumentFileInBucket(fileHeader, hc.Bucket)
 	if err != nil {
+		fmt.Printf("ERROR: %w", err)
 		return err
 	}
 
@@ -93,6 +96,7 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 		},
 	)
 	if err != nil {
+		fmt.Printf("ERROR: %w", err)
 		return err
 	}
 
