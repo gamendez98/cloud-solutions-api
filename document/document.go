@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/labstack/gommon/log"
 	"io"
 	"mime/multipart"
 	"path/filepath"
@@ -31,18 +32,18 @@ func SaveDocumentFileInBucket(fileHeader *multipart.FileHeader, bucket *storage.
 	ctx := context.Background()
 	src, err := fileHeader.Open()
 	if err != nil {
-		fmt.Printf("ERROR: %w", err)
 		return "", fmt.Errorf("failed to open fileHeader: %w", err)
 	}
 	defer func(src multipart.File) {
-		_ = src.Close()
+		if err := src.Close(); err != nil {
+			log.Error(err)
+		}
 	}(src)
 
 	object := bucket.Object(fmt.Sprintf("uploads/%d-%s", time.Now().Unix(), fileHeader.Filename))
 	writer := object.NewWriter(ctx)
 
 	if _, err = io.Copy(writer, src); err != nil {
-		fmt.Printf("ERROR: %w", err)
 		return "", fmt.Errorf("failed to copy fileHeader to storage: %w", err)
 	}
 
@@ -92,7 +93,9 @@ func ExtractTextFromDocumentFile(fileHeader *multipart.FileHeader) (string, erro
 		return "", fmt.Errorf("failed to open fileHeader: %w", err)
 	}
 	defer func(file multipart.File) {
-		_ = file.Close()
+		if err := file.Close(); err != nil {
+			log.Error(err)
+		}
 	}(file)
 	data, err := io.ReadAll(file)
 
@@ -123,7 +126,9 @@ func ExtractTextFromPDF(data []byte) (string, error) {
 		return "", fmt.Errorf("failed to open PDF: %v", err)
 	}
 	defer func(doc *fitz.Document) {
-		_ = doc.Close()
+		if err := doc.Close(); err != nil {
+			log.Error(err)
+		}
 	}(doc)
 
 	// Extract text from each page
@@ -150,7 +155,9 @@ func ExtractTextFromDocx(data []byte) (string, error) {
 		return "", fmt.Errorf("failed to open DOCX from bytes: %w", err)
 	}
 	defer func(doc *docx.ReplaceDocx) {
-		_ = doc.Close()
+		if err := doc.Close(); err != nil {
+			log.Error(err)
+		}
 	}(doc)
 
 	// Extract raw text

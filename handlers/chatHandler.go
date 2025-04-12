@@ -39,15 +39,11 @@ func (hc *HandlerContext) ChatOwnershipMiddleware(next echo.HandlerFunc) echo.Ha
 		chatIDString := c.Param("chatID")
 		chatID, err := strconv.Atoi(chatIDString)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, echo.Map{
-				"error": "Invalid chat ID",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 		}
 
 		if !CheckChatOwnership(hc, c, chatID) {
-			return c.JSON(http.StatusForbidden, echo.Map{
-				"error": "Forbidden: You do not own this chat",
-			})
+			return echo.NewHTTPError(http.StatusForbidden, "Forbidden: You do not own this chat")
 		}
 
 		// Continue to the next handler if ownership is verified
@@ -58,9 +54,7 @@ func (hc *HandlerContext) ChatOwnershipMiddleware(next echo.HandlerFunc) echo.Ha
 func (hc *HandlerContext) CreateEmptyChat(c echo.Context) error {
 	account, err := authentication.GetCurrentAccount(hc.Queryer, c)
 	if err != nil {
-		return c.JSON(
-			http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
-		)
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 	}
 
 	newChat, err := hc.Queryer.CreateChat(context.Background(),
@@ -80,14 +74,12 @@ func (hc *HandlerContext) GetChatByID(c echo.Context) error {
 	chatIDString := c.Param("chatID")
 	chatID, err := strconv.Atoi(chatIDString)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid chat ID",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	retrievedChat, err := hc.Queryer.GetChatByID(context.Background(), int32(chatID))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	return c.JSON(http.StatusOK, retrievedChat)
@@ -97,14 +89,12 @@ func (hc *HandlerContext) DeleteChatByID(c echo.Context) error {
 	chatIDString := c.Param("chatID")
 	chatID, err := strconv.Atoi(chatIDString)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid chat ID",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	err = hc.Queryer.DeleteChat(context.Background(), int32(chatID))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{})
@@ -116,19 +106,17 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 	newMessageParameters := chat.NewMessageParameters{}
 
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid chat ID",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	if err = c.Bind(&newMessageParameters); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"message": err.Error()})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
 	retrievedChat, err := hc.Queryer.GetChatByID(context.Background(), int32(chatID))
 
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	newMessage := chat.NewMessageForChat(
@@ -138,7 +126,7 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 	newMessageJSON, err := json.Marshal(newMessage)
 
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
 	retrievedChat, err = hc.Queryer.AddMessageToChat(context.Background(), models.AddMessageToChatParams{
@@ -147,7 +135,7 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 	})
 
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
 	err = hc.AIAssistantMessagePublisher.Publish(rabbitMQPublishers.AIAssistantMessage{
@@ -156,7 +144,7 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 	})
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Error publishing message to RabbitMQ"})
+		return echo.NewHTTPError(http.StatusInternalServerError, "Error publishing message to RabbitMQ")
 	}
 
 	return c.JSON(http.StatusOK, retrievedChat)
@@ -166,14 +154,12 @@ func (hc *HandlerContext) GetChatIsUnread(c echo.Context) error {
 	chatIDString := c.Param("chatID")
 	chatID, err := strconv.Atoi(chatIDString)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid chat ID",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	unread, err := hc.Queryer.IsUnread(context.Background(), int32(chatID))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	return c.JSON(http.StatusOK, map[string]bool{"unread": unread.Bool})
@@ -183,14 +169,12 @@ func (hc *HandlerContext) ChatMarkAsRead(c echo.Context) error {
 	chatIDString := c.Param("chatID")
 	chatID, err := strconv.Atoi(chatIDString)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid chat ID",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	err = hc.Queryer.MarkAsReadByID(context.Background(), int32(chatID))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"message": err})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid chat ID")
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{})

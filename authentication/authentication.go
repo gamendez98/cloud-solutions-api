@@ -38,7 +38,6 @@ func GetCurrentUsername(c echo.Context) (string, error) {
 	}
 
 	claims := token.Claims
-	fmt.Println(claims)
 	parsedClaims, ok := claims.(jwt.MapClaims)
 	if !ok {
 		return "", fmt.Errorf("failed to parse claims")

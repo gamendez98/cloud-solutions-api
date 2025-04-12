@@ -7,7 +7,9 @@ import (
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
+	"github.com/labstack/echo/v4"
 	"google.golang.org/api/option"
+	"strconv"
 )
 
 type HandlerContext struct {
@@ -57,4 +59,18 @@ func NewHandlerContext(configuration config.Config) *HandlerContext {
 	handlerContext.Bucket = handlerContext.StorageClient.Bucket(configuration.BucketName)
 
 	return handlerContext
+}
+
+func getOffsetLimit(c echo.Context) (int, int) {
+	offsetString := c.QueryParam("offset")
+	limitString := c.QueryParam("limit")
+	offset, err := strconv.Atoi(offsetString)
+	if err != nil {
+		offset = 0
+	}
+	limit, err := strconv.Atoi(limitString)
+	if err != nil {
+		limit = 10
+	}
+	return offset, limit
 }

@@ -7,7 +7,6 @@ import (
 	"cloud-solutions-api/rabbitMQPublishers"
 	"context"
 	"database/sql"
-	"fmt"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -23,17 +22,13 @@ func (hc *HandlerContext) UserOwnsDocumentMiddleware(next echo.HandlerFunc) echo
 		// Validate document ID format
 		documentID, err := strconv.Atoi(documentIDString)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, echo.Map{
-				"error": "Invalid document ID",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid document ID")
 		}
 
 		// Retrieve the current account
 		account, err := authentication.GetCurrentAccount(hc.Queryer, c)
 		if err != nil {
-			return c.JSON(
-				http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
-			)
+			return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 		}
 
 		// Check if the user owns the document
@@ -47,9 +42,7 @@ func (hc *HandlerContext) UserOwnsDocumentMiddleware(next echo.HandlerFunc) echo
 
 		// Deny access if the user doesn't own the document
 		if !owned {
-			return c.JSON(http.StatusForbidden, echo.Map{
-				"error": "Forbidden: You do not own this document",
-			})
+			return echo.NewHTTPError(http.StatusForbidden, "Forbidden: You do not own this document")
 		}
 
 		// If the user owns the document, proceed to the next handler
@@ -60,29 +53,22 @@ func (hc *HandlerContext) UserOwnsDocumentMiddleware(next echo.HandlerFunc) echo
 func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		fmt.Printf("ERROR: %w", err)
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid request payload",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
 	account, err := authentication.GetCurrentAccount(hc.Queryer, c)
 	if err != nil {
-		fmt.Printf("ERROR: %w", err)
-		return c.JSON(
-			http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
-		)
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 	}
 
 	path, err := document.SaveDocumentFileInBucket(fileHeader, hc.Bucket)
 	if err != nil {
-		fmt.Printf("ERROR: %w", err)
 		return err
 	}
 
 	text, err := document.ExtractTextFromDocumentFile(fileHeader)
 	if err != nil {
-		fmt.Printf("error extracting text from document: %w", err)
+		c.Logger().Errorf("error extracting text from document: %s", err)
 	}
 
 	newDocument, err := hc.Queryer.CreateDocument(
@@ -96,7 +82,6 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 		},
 	)
 	if err != nil {
-		fmt.Printf("ERROR: %w", err)
 		return err
 	}
 
@@ -106,7 +91,7 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 	})
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Error publishing document to RabbitMQ"})
+		return echo.NewHTTPError(http.StatusInternalServerError, "Error publishing document to RabbitMQ")
 	}
 
 	return c.JSON(http.StatusCreated, newDocument)
@@ -117,16 +102,12 @@ func (hc *HandlerContext) DeleteDocumentByID(c echo.Context) error {
 
 	documentID, err := strconv.Atoi(documentIDString)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid document ID",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid document ID")
 	}
 
 	retrievedDocument, err := hc.Queryer.GetDocumentByID(context.Background(), int32(documentID))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid document ID",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid document ID")
 	}
 
 	err = hc.Queryer.DeleteDocument(
@@ -140,7 +121,7 @@ func (hc *HandlerContext) DeleteDocumentByID(c echo.Context) error {
 
 	err = document.DeleteDocumentFileFromBucket(retrievedDocument.FilePath.String, hc.Bucket)
 	if err != nil {
-		fmt.Print(err)
+		c.Logger().Errorf("error deleting document file from bucket: %s", err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{})

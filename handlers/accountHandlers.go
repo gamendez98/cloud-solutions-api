@@ -8,40 +8,20 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"net/http"
-	"strconv"
 	"time"
 )
-
-func getOffsetLimit(c echo.Context) (int, int) {
-	offsetString := c.QueryParam("offset")
-	limitString := c.QueryParam("limit")
-	offset, err := strconv.Atoi(offsetString)
-	if err != nil {
-		offset = 0
-	}
-	limit, err := strconv.Atoi(limitString)
-	if err != nil {
-		limit = 10
-	}
-	return offset, limit
-}
 
 func (hc *HandlerContext) login(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
-	message401 := "Invalid username or password"
 
 	passwordHash, err := hc.Queryer.GetAccountPasswordHashByUsername(context.Background(), username)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, echo.Map{
-			"error": message401,
-		})
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 	}
 
 	if !authentication.CheckPasswordHash(password, passwordHash.PasswordHash) {
-		return c.JSON(http.StatusUnauthorized, echo.Map{
-			"error": message401,
-		})
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 	}
 
 	// Generate JWT token
@@ -70,12 +50,10 @@ func (hc *HandlerContext) CreateUser(c echo.Context) error {
 		Email    string `json:"email"`
 	}{}
 	if err := c.Bind(&accountCreationParams); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid request payload",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
-	password_hash, err := authentication.HashPassword(accountCreationParams.Password)
+	passwordHash, err := authentication.HashPassword(accountCreationParams.Password)
 	if err != nil {
 		return err
 	}
@@ -85,7 +63,7 @@ func (hc *HandlerContext) CreateUser(c echo.Context) error {
 		models.CreateAccountParams{
 			Username:     accountCreationParams.Username,
 			Email:        accountCreationParams.Email,
-			PasswordHash: password_hash,
+			PasswordHash: passwordHash,
 		},
 	)
 	if err != nil {
@@ -98,22 +76,20 @@ func (hc *HandlerContext) CreateUser(c echo.Context) error {
 func (hc *HandlerContext) GetAccountByID(c echo.Context) error {
 	username, err := authentication.GetCurrentUsername(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Unauthorized"})
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 	}
 	account, err := hc.Queryer.GetAccountByUsername(context.Background(), username)
 	if err != nil {
 		return err
 	}
-	return c.JSON(200, account)
+	return c.JSON(http.StatusOK, account)
 }
 
 func (hc *HandlerContext) GetAccountDocuments(c echo.Context) error {
 	account, err := authentication.GetCurrentAccount(hc.Queryer, c)
 	offset, limit := getOffsetLimit(c)
 	if err != nil {
-		return c.JSON(
-			http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
-		)
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 	}
 	documents, err := hc.Queryer.GetDocumentsByAccountID(
 		context.Background(),
@@ -133,12 +109,11 @@ func (hc *HandlerContext) GetAccountDocuments(c echo.Context) error {
 
 func (hc *HandlerContext) GetAccountChats(c echo.Context) error {
 	account, err := authentication.GetCurrentAccount(hc.Queryer, c)
-	offset, limit := getOffsetLimit(c)
 	if err != nil {
-		return c.JSON(
-			http.StatusUnauthorized, echo.Map{"error": "Unauthorized"},
-		)
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 	}
+
+	offset, limit := getOffsetLimit(c)
 
 	chats, err := hc.Queryer.GetChatsByAccountID(
 		context.Background(),
