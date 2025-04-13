@@ -4,8 +4,10 @@ import (
 	"cloud-solutions-api/config"
 	"encoding/json"
 	"fmt"
+	"github.com/labstack/gommon/log"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"sync"
+	"time"
 )
 
 type RabbitMQPublisher struct {
@@ -17,34 +19,36 @@ type RabbitMQPublisher struct {
 }
 
 func (publisher *RabbitMQPublisher) PublishJSON(message interface{}) error {
-	if publisher.ch == nil {
-		return fmt.Errorf("channel is not initialized")
-	}
-
 	marshalled, err := json.Marshal(message)
-
 	if err != nil {
-		return fmt.Errorf("failed to marshal message: %w", err)
-	}
-
-	err = publisher.Connect()
-
-	if err != nil {
+		log.Errorf("Failed to marshal message: %v", err)
 		return err
 	}
 
-	if err := publisher.ch.Publish(
-		publisher.exchangeName, // exchange
-		"",                     // routing key
-		false,                  // mandatory
-		false,                  // immediate
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        marshalled,
-		},
-	); err != nil {
-		return fmt.Errorf("failed to publish message: %w", err)
-	}
+	go func() {
+
+		err = publisher.Connect()
+
+		if err != nil {
+			log.Errorf("Failed to connect to RabbitMQ: %v", err)
+			return
+		}
+
+		if err := publisher.ch.Publish(
+			publisher.exchangeName, // exchange
+			"",                     // routing key
+			false,                  // mandatory
+			false,                  // immediate
+			amqp.Publishing{
+				ContentType: "application/json",
+				Body:        marshalled,
+			},
+		); err != nil {
+			log.Errorf("Failed to publish message: %v", err)
+			return
+		}
+
+	}()
 
 	return nil
 }
@@ -136,9 +140,18 @@ func GetConnection() (*amqp.Connection, error) {
 			conf.RabbitMQPassword,
 			conf.RabbitMQHost,
 			conf.RabbitMQPort)
-	conn, err := amqp.Dial(uri)
-	if err == nil {
-		connection = conn
+	var retryCount = 8
+	var conn *amqp.Connection
+	var err error
+	for i := 0; i < retryCount; i++ {
+		conn, err = amqp.Dial(uri)
+		if err == nil {
+			connection = conn
+			break
+		}
+		log.Errorf("Failed to connect to RabbitMQ: %v", err)
+		log.Infof("Retrying in %d seconds...", 1<<uint(i))
+		time.Sleep(time.Second << uint(i))
 	}
 	return conn, err
 }

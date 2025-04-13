@@ -48,7 +48,7 @@ func SaveDocumentFileInBucket(fileHeader *multipart.FileHeader, bucket *storage.
 	}
 
 	if err := writer.Close(); err != nil {
-		fmt.Printf("ERROR: %w", err)
+		log.Error(err)
 		return "", fmt.Errorf("failed to close writer: %w", err)
 	}
 

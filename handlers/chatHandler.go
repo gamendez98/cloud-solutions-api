@@ -142,9 +142,8 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 		Messages: retrievedChat.GetMessages(),
 		ChatId:   retrievedChat.ID,
 	})
-
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Error publishing message to RabbitMQ")
+		return err
 	}
 
 	return c.JSON(http.StatusOK, retrievedChat)

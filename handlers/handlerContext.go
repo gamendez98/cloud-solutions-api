@@ -6,8 +6,8 @@ import (
 	"cloud-solutions-api/rabbitMQPublishers"
 	"cloud.google.com/go/storage"
 	"context"
-	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"google.golang.org/api/option"
 	"strconv"
 )
@@ -33,27 +33,27 @@ func NewHandlerContext(configuration config.Config) *HandlerContext {
 		DBPassword: configuration.DbPassword,
 	})
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		panic(err)
 	}
 	handlerContext.Queryer = queryer
 
 	documentIndexingPublisher, err := rabbitMQPublishers.NewDocumentIndexingPublisher()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		panic(err)
 	}
 	handlerContext.DocumentIndexingPublisher = documentIndexingPublisher
 
 	aiAssistantMessagePublisher, err := rabbitMQPublishers.NewAIAssistantMessagePublisher()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		panic(err)
 	}
 	handlerContext.AIAssistantMessagePublisher = aiAssistantMessagePublisher
 	handlerContext.StorageClient, err = storage.NewClient(context.Background(), option.WithCredentialsFile(configuration.GCPServiceAccountFile))
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		panic(err)
 	}
 	handlerContext.Bucket = handlerContext.StorageClient.Bucket(configuration.BucketName)

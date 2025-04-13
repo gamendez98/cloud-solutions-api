@@ -89,9 +89,8 @@ func (hc *HandlerContext) CreateDocument(c echo.Context) error {
 		DocumentId:   newDocument.ID,
 		DocumentText: newDocument.Text.String,
 	})
-
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Error publishing document to RabbitMQ")
+		return err
 	}
 
 	return c.JSON(http.StatusCreated, newDocument)
