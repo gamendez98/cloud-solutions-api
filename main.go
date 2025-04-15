@@ -48,6 +48,7 @@ func main() {
 	handlers.RegisterAccountRoutes(e, handlerContext)
 	handlers.RegisterDocumentRoutes(e, handlerContext)
 	handlers.RegisterChatRoutes(e, handlerContext)
+	e.GET("/health", handlerContext.HealthCheck)
 
 	// Start server
 	port := ":80"

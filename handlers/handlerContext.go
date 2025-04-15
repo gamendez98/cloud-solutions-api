@@ -61,6 +61,10 @@ func NewHandlerContext(configuration config.Config) *HandlerContext {
 	return handlerContext
 }
 
+func (hc *HandlerContext) HealthCheck(c echo.Context) error {
+	return c.String(200, "OK")
+}
+
 func getOffsetLimit(c echo.Context) (int, int) {
 	offsetString := c.QueryParam("offset")
 	limitString := c.QueryParam("limit")
