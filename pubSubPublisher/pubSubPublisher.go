@@ -5,6 +5,8 @@ import (
 	"cloud.google.com/go/pubsub"
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/labstack/gommon/log"
 	"google.golang.org/api/option"
 )
 
@@ -64,10 +66,13 @@ func publishJson(topic *pubsub.Topic, message interface{}) error {
 		},
 	})
 
-	_, err = result.Get(ctx)
-	if err != nil {
-		return err
-	}
+	go func() {
+		_, err = result.Get(ctx)
+		if err != nil {
+			log.Error(fmt.Sprintf("Error publishing message to %s: %s", topic.String(), err))
+		}
+	}()
+
 	return nil
 }
 
