@@ -39,6 +39,12 @@ func main() {
 	configuration := config.GetConfig()
 
 	handlerContext := handlers.NewHandlerContext(*configuration)
+	defer func() {
+		errs := handlerContext.Close()
+		for _, err := range errs {
+			e.Logger.Errorf("error closing handler context: %s", err)
+		}
+	}()
 
 	// Middleware
 	e.Use(middleware.Logger())  // Logs all HTTP requests

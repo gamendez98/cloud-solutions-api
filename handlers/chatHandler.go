@@ -4,7 +4,7 @@ import (
 	"cloud-solutions-api/authentication"
 	"cloud-solutions-api/chat"
 	"cloud-solutions-api/models"
-	"cloud-solutions-api/rabbitMQPublishers"
+	"cloud-solutions-api/pubSubPublisher"
 	"context"
 	"encoding/json"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -138,7 +138,7 @@ func (hc *HandlerContext) CreateChatMessage(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
-	err = hc.AIAssistantMessagePublisher.Publish(rabbitMQPublishers.AIAssistantMessage{
+	err = hc.PuSubPublisher.PublishAiAssistantMessage(pubSubPublisher.AIAssistantMessage{
 		Messages: retrievedChat.GetMessages(),
 		ChatId:   retrievedChat.ID,
 	})

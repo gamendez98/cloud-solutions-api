@@ -30,4 +30,4 @@ docker.env
 
 uploads
 
-api-service-account.json
+api-service-account*.json
