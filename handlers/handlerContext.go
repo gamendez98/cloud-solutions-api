@@ -3,7 +3,7 @@ package handlers
 import (
 	"cloud-solutions-api/config"
 	"cloud-solutions-api/models"
-	"cloud-solutions-api/rabbitMQPublishers"
+	"cloud-solutions-api/pubSubPublisher"
 	"cloud.google.com/go/storage"
 	"context"
 	"github.com/labstack/echo/v4"
@@ -13,12 +13,11 @@ import (
 )
 
 type HandlerContext struct {
-	Queryer                     *models.Queries
-	DocumentIndexingPublisher   *rabbitMQPublishers.DocumentIndexingPublisher
-	AIAssistantMessagePublisher *rabbitMQPublishers.AIAssistantMessagePublisher
-	StorageClient               *storage.Client
-	Bucket                      *storage.BucketHandle
-	Secret                      []byte
+	Queryer        *models.Queries
+	PuSubPublisher *pubSubPublisher.PubSubPublisher
+	StorageClient  *storage.Client
+	Bucket         *storage.BucketHandle
+	Secret         []byte
 }
 
 func NewHandlerContext(configuration config.Config) *HandlerContext {
@@ -37,26 +36,14 @@ func NewHandlerContext(configuration config.Config) *HandlerContext {
 		panic(err)
 	}
 	handlerContext.Queryer = queryer
-
-	documentIndexingPublisher, err := rabbitMQPublishers.NewDocumentIndexingPublisher()
-	if err != nil {
-		log.Error(err)
-		panic(err)
-	}
-	handlerContext.DocumentIndexingPublisher = documentIndexingPublisher
-
-	aiAssistantMessagePublisher, err := rabbitMQPublishers.NewAIAssistantMessagePublisher()
-	if err != nil {
-		log.Error(err)
-		panic(err)
-	}
-	handlerContext.AIAssistantMessagePublisher = aiAssistantMessagePublisher
 	handlerContext.StorageClient, err = storage.NewClient(context.Background(), option.WithCredentialsFile(configuration.GCPServiceAccountFile))
+	handlerContext.Bucket = handlerContext.StorageClient.Bucket(configuration.BucketName)
+	publisher, err := pubSubPublisher.NewPubSubPublisher(configuration.GCPProjectID, configuration.GCPServiceAccountFile)
 	if err != nil {
 		log.Error(err)
 		panic(err)
 	}
-	handlerContext.Bucket = handlerContext.StorageClient.Bucket(configuration.BucketName)
+	handlerContext.PuSubPublisher = publisher
 
 	return handlerContext
 }
@@ -77,4 +64,13 @@ func getOffsetLimit(c echo.Context) (int, int) {
 		limit = 10
 	}
 	return offset, limit
+}
+
+func (hc *HandlerContext) Close() []error {
+	var errs []error
+	err := hc.PuSubPublisher.Close()
+	errs = append(errs, err)
+	err = hc.StorageClient.Close()
+	errs = append(errs, err)
+	return errs
 }
