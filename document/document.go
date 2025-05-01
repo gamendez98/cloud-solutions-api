@@ -41,7 +41,7 @@ func SaveDocumentFileInBucket(fileHeader *multipart.FileHeader, bucket *storage.
 		}
 	}(src)
 
-	object := bucket.Object(fmt.Sprintf("uploads/%d-%s-%x", time.Now().Unix(), fileHeader.Filename, rand.IntN(65535)))
+	object := bucket.Object(fmt.Sprintf("uploads/%d-%x-%s", time.Now().Unix(), rand.IntN(65535), fileHeader.Filename))
 	writer := object.NewWriter(ctx)
 
 	if _, err = io.Copy(writer, src); err != nil {
