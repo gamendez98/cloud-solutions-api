@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/labstack/gommon/log"
 	"io"
+	"math/rand/v2"
 	"mime/multipart"
 	"path/filepath"
 	"strings"
@@ -40,7 +41,7 @@ func SaveDocumentFileInBucket(fileHeader *multipart.FileHeader, bucket *storage.
 		}
 	}(src)
 
-	object := bucket.Object(fmt.Sprintf("uploads/%d-%s", time.Now().Unix(), fileHeader.Filename))
+	object := bucket.Object(fmt.Sprintf("uploads/%d-%s-%x", time.Now().Unix(), fileHeader.Filename, rand.IntN(65535)))
 	writer := object.NewWriter(ctx)
 
 	if _, err = io.Copy(writer, src); err != nil {
