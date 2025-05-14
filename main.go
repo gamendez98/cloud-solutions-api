@@ -4,6 +4,7 @@ import (
 	"cloud-solutions-api/config"
 	"cloud-solutions-api/handlers"
 	"errors"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq" // Importing the driver anonymously
@@ -57,10 +58,7 @@ func main() {
 	e.GET("/health", handlerContext.HealthCheck)
 
 	// Start server
-	port := ":80"
-	if configuration.Development {
-		port = ":8080"
-	}
+	port := fmt.Sprintf(":%s", configuration.Port)
 	e.Logger.Info("Server is running on port " + port)
 	e.Logger.Fatal(e.Start(port))
 }
